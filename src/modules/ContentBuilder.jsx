@@ -22,7 +22,8 @@ const SECTIONS = [
   { key: 'reg28',            label: 'Regulation 28',                icon: '⚖️', required: false, hint: 'Applicable to retirement funds only. Explain Regulation 28 compliance.' },
   { key: 'faisDisclosure',   label: 'FAIS & Statutory Disclosures', icon: '📜', required: true,  hint: 'FAIS compliance, conflict of interest, risk disclosure, FICA status.' },
   { key: 'implementation',   label: 'Implementation Steps',         icon: '🚀', required: false, hint: 'Steps required to action this advice.' },
-  { key: 'reviewSchedule',   label: 'Review Schedule',              icon: '🗓️', required: false, hint: 'When and how the investment will be reviewed.' },
+  { key: 'reviewSchedule',       label: 'Review Schedule',                    icon: '🗓️', required: false, hint: 'When and how the investment will be reviewed.' },
+  { key: 'clientDeclComments',   label: 'Section I — Client Declarations (General Comments)', icon: '📝', required: false, hint: 'Optional general comments from the client regarding this Record of Advice. The 12 client declarations are pre-printed in the document.' },
 ];
 
 const applyTokens = (text, clientProfile, providerResult) => {

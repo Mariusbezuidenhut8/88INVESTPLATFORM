@@ -437,6 +437,54 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
           </DocSection>
         )}
 
+        {/* ── SECTION I. CLIENT DECLARATIONS ── */}
+        <DocSection number="I" title="Client Declarations">
+          <p className="text-xs text-gray-500 italic mb-3">[Please note that it is of utmost importance that you read this section carefully and understand it fully before acceptance.]</p>
+          <table className="w-full text-xs border-collapse">
+            <tbody>
+              {[
+                { n:'1',  text: 'I confirm that a Contact Stage Disclosure letter, setting out the Financial Advisor\'s full particulars, his/her experience and services offered, has been provided to me.' },
+                { n:'2',  text: 'I confirm that I required the Financial Advisor to render the financial services set out in the Service Level Agreement, a copy of which has been provided to me.' },
+                { n:'3',  text: null, sub: [
+                  'Where I elected not to take up the Financial Advisor\'s recommendation of a Full Financial Needs Analysis, or where I explicitly declined to provide any information requested by the Financial Advisor, I confirm that:',
+                  'a) I clearly understand that there may be limitations on the appropriateness of the advice provided, and',
+                  'b) I will take particular care to consider on my own whether the advice is appropriate considering my own financial objectives, financial position and particular needs, particularly any aspects of such objectives, situation or needs that were not considered in light of the circumstances.',
+                ]},
+                { n:'4',  text: 'Where I elected to conclude a transaction that differs from that recommended by the Financial Advisor, or otherwise elected not to follow the advice furnished, or elected to receive more limited information or advice than what the Financial Advisor was able to provide, I was alerted of the clear existence of any risks to myself and was advised to take particular care to consider whether any product selected is appropriate to my needs, objectives and circumstances.' },
+                { n:'5',  text: 'I understand that the accuracy of a Needs Analysis is dependent on the information provided to or obtained by the Financial Advisor. The advice furnished and product recommendations made by the Financial Advisor are based on the information I provided to the Financial Advisor. I understand that material non-disclosures and misrepresentations could result in inappropriate product(s) being recommended and purchased by me.' },
+                { n:'6',  text: 'I confirm that I was provided with copies of quote(s), marketing brochures, rates and benefit sheets for the product(s) selected. All material terms and conditions of the product(s) selected were explained to me prior to any decision made.' },
+                { n:'7',  text: 'I have been informed of and understand all costs, charges, penalties, liquidity and tax implications where applicable. I understand the risks / guarantees (or absence thereof) associated with the product(s) selected.' },
+                { n:'8',  text: 'I confirm that all documents signed by me were fully completed prior to my signing them.' },
+                { n:'9',  text: 'I confirm that where I provided the Financial Advisor with the information required for any risk benefit application forms on my behalf, the Financial Advisor warned me verbally of the risks and consequences of non-disclosure and misrepresentation of such information.' },
+                { n:'10', text: 'I confirm that the Financial Advisor has made enquiries to ascertain whether the product(s) selected is intended to replace any existing financial products held by me and where applicable, has informed me of the financial implications, costs and consequences of replacement.' },
+                { n:'11', text: 'Notwithstanding the information provided by the Financial Advisor, I acknowledge that I have an obligation to familiarise myself with the terms and conditions of the product(s) that I have purchased.' },
+                { n:'12', text: 'I confirm having received a copy of this Client Advice Record.' },
+              ].map(row => (
+                <tr key={row.n}>
+                  <td className="border border-gray-300 px-2 py-2 text-center font-bold text-gray-600 align-top w-8">{row.n}.</td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-700 leading-relaxed">
+                    {row.sub ? (
+                      <div>
+                        <p>{row.sub[0]}</p>
+                        <div className="mt-1.5 ml-3 space-y-1">
+                          <p>{row.sub[1]}</p>
+                          <p>{row.sub[2]}</p>
+                        </div>
+                      </div>
+                    ) : row.text}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-4">
+            <p className="text-xs font-semibold text-gray-600 mb-1">General Comments:</p>
+            <div className="border border-gray-300 rounded min-h-16 px-3 py-2 text-sm text-gray-800">
+              {content.clientDeclComments || <span className="text-gray-300 italic"> </span>}
+            </div>
+          </div>
+        </DocSection>
+
         {/* ── SECTION H. FINANCIAL ADVISOR'S DECLARATION ── */}
         <DocSection number="H" title="Financial Advisor's Declaration">
           <table className="w-full text-xs border-collapse">
