@@ -24,13 +24,14 @@ import ProviderScoring from './modules/ProviderScoring.jsx';
 import FeeDisclosure   from './modules/FeeDisclosure.jsx';
 import ContentBuilder  from './modules/ContentBuilder.jsx';
 import ROADocument     from './modules/ROADocument.jsx';
-import ParagraphManager from './admin/ParagraphManager.jsx';
-import ProfileSettings  from './admin/ProfileSettings.jsx';
+import ParagraphManager  from './admin/ParagraphManager.jsx';
+import ProfileSettings   from './admin/ProfileSettings.jsx';
+import SavedROAsManager  from './admin/SavedROAsManager.jsx';
 import {
-  saveROA, loadROAs, loadROAById, saveDraft, loadDraft, clearDraft,
+  saveROA, saveDraft, loadDraft, clearDraft,
   loadProfile, saveProfile, generateROAId,
 } from './shared/storage.js';
-import { formatDate, formatCurrency, getProductLabel, uid } from './shared/ui.js';
+import { getProductLabel } from './shared/ui.js';
 
 // ── Step definitions ───────────────────────────────────────────────────────
 const STEPS = [
@@ -74,37 +75,6 @@ function StepBar({ currentStep, completedSteps }) {
   );
 }
 
-// ── Saved ROA list ─────────────────────────────────────────────────────────
-function SavedROAList({ onLoad, onClose }) {
-  const roas = loadROAs();
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-end sm:items-center justify-center z-40 p-0 sm:p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg flex flex-col" style={{maxHeight:'80vh'}}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-          <h2 className="font-bold text-gray-800">Saved ROAs</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">x</button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-4 py-3">
-          {roas.length === 0 && <p className="text-sm text-gray-400 text-center py-8">No saved ROAs yet.</p>}
-          {roas.map(roa => (
-            <button key={roa.id} onClick={() => onLoad(roa)}
-              className="w-full text-left rounded-xl border border-gray-200 hover:border-blue-300 p-4 mb-2 transition-all hover:bg-blue-50">
-              <div className="flex items-center justify-between mb-1">
-                <p className="font-semibold text-sm text-gray-800">{[roa.clientProfile?.firstNames, roa.clientProfile?.surname].filter(Boolean).join(' ') || 'Unnamed Client'}</p>
-                <span className="text-xs text-gray-400">{formatDate(roa.createdAt)}</span>
-              </div>
-              <p className="text-xs text-gray-500">{getProductLabel(roa.providerResult?.productKey || roa.treeResult?.productKey)} · {roa.providerResult?.recommended?.name || 'Provider not selected'}</p>
-              <p className="text-xs text-gray-400 mt-0.5">Ref: {roa.id}</p>
-            </button>
-          ))}
-        </div>
-        <div className="px-6 py-3 border-t border-gray-100 flex-shrink-0">
-          <button onClick={onClose} className="w-full text-sm text-gray-500 border border-gray-200 py-2 rounded-lg hover:bg-gray-50">Close</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ══════════════════════════════════════════════════════════════════════════
 // MAIN APP
@@ -346,7 +316,7 @@ export default function App() {
       {/* ── ADMIN OVERLAYS ── */}
       {showSettings    && <ProfileSettings  onClose={() => setShowSettings(false)}    onChange={p => { setAdvisorProfile(p); saveProfile(p); }} />}
       {showParaManager && <ParagraphManager onClose={() => setShowParaManager(false)} />}
-      {showSaved       && <SavedROAList     onLoad={handleLoadROA}                    onClose={() => setShowSaved(false)} />}
+      {showSaved       && <SavedROAsManager  onLoad={handleLoadROA}                    onClose={() => setShowSaved(false)} />}
 
     </div>
   );
