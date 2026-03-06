@@ -437,6 +437,87 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
           </DocSection>
         )}
 
+        {/* ── SECTION H. FINANCIAL ADVISOR'S DECLARATION ── */}
+        <DocSection number="H" title="Financial Advisor's Declaration">
+          <table className="w-full text-xs border-collapse">
+            <tbody>
+              <tr>
+                <td className="border border-gray-300 px-2 py-2 text-center font-bold text-gray-600 w-6 align-top">1.</td>
+                <td className="border border-gray-300 px-3 py-2 text-gray-700 align-top" style={{width:'35%'}}>The client has elected not to accept the following product recommendations:</td>
+                <td className="border border-gray-300 px-3 py-2 text-gray-800 align-top">
+                  {content.advisorDeclaration?.declined
+                    ? <span className="whitespace-pre-wrap">{content.advisorDeclaration.declined}</span>
+                    : <span className="text-gray-400 italic">N/A</span>}
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-2 py-2 text-center font-bold text-gray-600 align-top">2.</td>
+                <td className="border border-gray-300 px-3 py-2 text-gray-700 align-top">Reasons that the client elected not to accept the product recommendations above:</td>
+                <td className="border border-gray-300 px-3 py-2 text-gray-800 align-top">
+                  {content.advisorDeclaration?.reasons
+                    ? <span className="whitespace-pre-wrap">{content.advisorDeclaration.reasons}</span>
+                    : <span className="text-gray-400 italic">N/A</span>}
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-2 py-2 text-center font-bold text-gray-600 align-top">3.</td>
+                <td className="border border-gray-300 px-3 py-2 text-gray-700 align-top">Existence of any risks to the client for not concluding the transaction recommended:</td>
+                <td className="border border-gray-300 px-3 py-2 text-gray-800 align-top">
+                  {content.advisorDeclaration?.risks
+                    ? <span className="whitespace-pre-wrap">{content.advisorDeclaration.risks}</span>
+                    : <span className="text-gray-400 italic">N/A</span>}
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-2 py-2 text-center font-bold text-gray-600 align-top">4.</td>
+                <td colSpan={2} className="border border-gray-300 px-3 py-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-gray-700">The consequences thereof have been clearly explained to the Client:</span>
+                    <div className="flex gap-6 flex-shrink-0">
+                      <span className={`font-bold ${content.advisorDeclaration?.consequences === true ? 'text-gray-900' : 'text-gray-300'}`}>
+                        {content.advisorDeclaration?.consequences === true ? '☑' : '☐'} Yes
+                      </span>
+                      <span className={`font-bold ${content.advisorDeclaration?.consequences === false ? 'text-gray-900' : 'text-gray-300'}`}>
+                        {content.advisorDeclaration?.consequences === false ? '☑' : '☐'} No
+                      </span>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-2 py-2 text-center font-bold text-gray-600 align-top">5.</td>
+                <td className="border border-gray-300 px-3 py-2 text-gray-700 align-top">Where there is only a focussed need being addressed, the following was discussed and agreed with the Client:</td>
+                <td className="border border-gray-300 px-3 py-2 text-gray-800 align-top">
+                  {content.advisorDeclaration?.focussed
+                    ? <span className="whitespace-pre-wrap">{content.advisorDeclaration.focussed}</span>
+                    : <span className="text-gray-400 italic">N/A</span>}
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-2 py-2 text-center font-bold text-gray-600 align-top">6.</td>
+                <td colSpan={2} className="border border-gray-300 px-3 py-2 text-gray-700 leading-relaxed">
+                  Where there is only a focussed need being addressed or where the Client explicitly declined to provide any information requested by the Advisor, the Advisor confirms that he/she has alerted the client that:
+                  <div className="mt-1.5 ml-4 space-y-1">
+                    <p>a) There may be limitations on the appropriateness of the advice provided, and</p>
+                    <p>b) The client should take particular care to consider on its own whether the advice is appropriate considering the client's financial objectives, financial position and particular needs, particularly any aspects of such objectives, situation or needs that were not considered in light of the circumstances.</p>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-2 py-2 text-center font-bold text-gray-600 align-top">7.</td>
+                <td colSpan={2} className="border border-gray-300 px-3 py-2 text-gray-700 leading-relaxed">
+                  Where the Advisor does not have a suitable product that is appropriate for the client's needs, the Advisor confirms that:
+                  <div className="mt-1.5 ml-4 space-y-1">
+                    <p>a) This has been clearly explained to the Client</p>
+                    <p>b) He/she has declined to recommend a product or transaction</p>
+                    <p>c) He/she suggested to the client that the client should seek advice from another appropriately authorised provider.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </DocSection>
+
         {/* ── SIGNATURE BLOCK ── */}
         <div className="mt-12 pt-8 border-t-2 border-gray-900 page-break">
           <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide mb-6">Acknowledgement & Signatures</h2>

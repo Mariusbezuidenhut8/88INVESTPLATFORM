@@ -201,6 +201,65 @@ export const PARAGRAPH_BANK = {
     ],
   },
 
+  // ════════════════════════════════════════════════════════════════════
+  // SECTION H — FINANCIAL ADVISOR'S DECLARATION (sub-fields 1, 2, 3, 5)
+  // ════════════════════════════════════════════════════════════════════
+  advisorDecl_declined: {
+    general: [
+      { id: id(), label: 'N/A — All recommendations accepted', tags: ['declaration'],
+        text: 'N/A — The client accepted all product and provider recommendations made in this Record of Advice.' },
+      { id: id(), label: 'Client declined the primary product recommendation', tags: ['declaration','declined'],
+        text: 'The client elected not to accept the recommended [Product Type]. The advice was rendered in full and the recommendation was explained, but the client chose not to proceed with the recommended product.' },
+      { id: id(), label: 'Client declined specific provider recommendation', tags: ['declaration','declined','provider'],
+        text: 'The client elected not to accept the recommended provider, [Provider Name], despite the provider achieving the highest due diligence score. The client expressed a preference for an alternative provider.' },
+      { id: id(), label: 'Client partially accepted recommendation', tags: ['declaration','partial'],
+        text: 'The client elected not to accept the full recommendation as presented. The client accepted part of the recommendation but declined to proceed with certain elements as discussed.' },
+    ],
+  },
+
+  advisorDecl_reasons: {
+    general: [
+      { id: id(), label: 'N/A — No recommendations declined', tags: ['declaration'],
+        text: 'N/A — No recommendations were declined.' },
+      { id: id(), label: 'Personal preference for alternative provider', tags: ['declaration','preference'],
+        text: 'The client expressed a personal preference for an alternative provider based on an existing relationship or personal familiarity with that institution. The client acknowledged the due diligence outcome and exercised their right to choose a different provider.' },
+      { id: id(), label: 'Cost concerns', tags: ['declaration','cost'],
+        text: 'The client elected not to accept the recommendation primarily due to cost concerns. The full fee disclosure was provided, but the client determined that the fees were not acceptable for their circumstances at this time.' },
+      { id: id(), label: 'Timing / liquidity considerations', tags: ['declaration','timing','liquidity'],
+        text: 'The client elected not to proceed with the recommendation at this time due to timing or liquidity considerations. The client indicated they may wish to revisit the recommendation at a future date.' },
+      { id: id(), label: 'Client wished to seek independent input', tags: ['declaration','independent'],
+        text: 'The client wished to consider the recommendation further and to seek independent input before making a final decision. The advisor noted this decision and the client was provided with a copy of this Record of Advice.' },
+    ],
+  },
+
+  advisorDecl_risks: {
+    general: [
+      { id: id(), label: 'N/A — No recommendation declined', tags: ['declaration'],
+        text: 'N/A — No recommendations were declined; this item is not applicable.' },
+      { id: id(), label: 'Risk of continued unstructured / tax-inefficient investment', tags: ['declaration','risk'],
+        text: 'By not concluding the recommended transaction, the client\'s funds will remain in the current structure, which may not be tax-efficient, may carry higher costs, or may not be aligned with the client\'s stated investment objectives and risk profile. The advisor has explained these consequences to the client.' },
+      { id: id(), label: 'Risk to retirement savings adequacy', tags: ['declaration','risk','retirement'],
+        text: 'The client\'s decision not to proceed with the retirement savings recommendation increases the risk of an inadequate retirement fund at retirement. The compounding benefit of a tax-deductible, tax-deferred retirement fund vehicle will not be realised for the period during which the investment is delayed.' },
+      { id: id(), label: 'Risk of tax inefficiency', tags: ['declaration','risk','tax'],
+        text: 'By not proceeding with the tax-efficient vehicle recommended, the client\'s investment returns will be subject to income tax, dividends tax, and CGT at their marginal rates, reducing net investment growth compared to the recommended vehicle.' },
+      { id: id(), label: 'Gap in financial plan remains unmitigated', tags: ['declaration','risk','gap'],
+        text: 'The client\'s decision not to proceed with the recommended product leaves a gap in their financial plan. The specific financial risk or objective that this product was intended to address remains unmitigated. The advisor has clearly explained this consequence to the client.' },
+    ],
+  },
+
+  advisorDecl_focussed: {
+    general: [
+      { id: id(), label: 'N/A — Full needs analysis completed', tags: ['declaration','full_needs'],
+        text: 'N/A — A comprehensive needs analysis was completed in full. This item is not applicable.' },
+      { id: id(), label: 'Focussed need — client declined to provide full information', tags: ['declaration','focussed'],
+        text: 'The client declined to provide full financial information. Advice was rendered on a focussed need basis. The limitations of this approach were explained to the client, including that the advice may not account for the client\'s full financial position, other financial products held, or all financial objectives. The client confirmed understanding and instructed that the advice proceed on this basis.' },
+      { id: id(), label: 'Focussed need — specific request only', tags: ['declaration','focussed','specific'],
+        text: 'The client requested advice in respect of a specific focussed need only. The advisor addressed this specific need and informed the client that the advice is limited to this need and does not constitute comprehensive financial planning. The client acknowledged and accepted this limitation.' },
+      { id: id(), label: 'Focussed need — product replacement context', tags: ['declaration','focussed','replacement'],
+        text: 'Advice was rendered in the context of a product replacement request. The client\'s broader financial position was considered to the extent of information provided, and the replacement recommendation is based on the information available. The client was alerted to the limitations of advice rendered without a full financial needs analysis.' },
+    ],
+  },
+
 };
 
 // ── HELPERS ────────────────────────────────────────────────────────────────

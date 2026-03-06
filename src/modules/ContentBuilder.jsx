@@ -114,6 +114,97 @@ function SectionEditor({ section, productKey, text, onChange, clientProfile, pro
   );
 }
 
+// ── Advisor Declaration sub-field (text area + paragraph bank) ─────────────
+function DeclSubField({ number, label, paraKey, value, onChange, productKey, clientProfile, providerResult }) {
+  const [showBank, setShowBank] = useState(false);
+  const paragraphs = getParagraphs(paraKey, 'general');
+  const handleReplace = (para) => { onChange(applyTokens(para.text, clientProfile, providerResult)); setShowBank(false); };
+  const handleAppend  = (para) => { const r = applyTokens(para.text, clientProfile, providerResult); onChange(value ? value + '\n\n' + r : r); };
+  return (
+    <div className="mb-4">
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-xs font-semibold text-gray-700">{number}. {label}</p>
+        {paragraphs.length > 0 && (
+          <button onClick={() => setShowBank(v => !v)} className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">
+            📚 Suggestions ({paragraphs.length})
+          </button>
+        )}
+      </div>
+      {showBank && (
+        <div className="border border-gray-200 rounded-lg bg-gray-50 p-2 mb-2 max-h-48 overflow-y-auto">
+          {paragraphs.map(p => <ParaChip key={p.id} para={p} onAppend={handleAppend} onReplace={handleReplace} />)}
+        </div>
+      )}
+      <textarea
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+        rows={3}
+        className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-300 resize-none text-gray-700 placeholder-gray-300"
+        placeholder={`Enter text for item ${number}...`}
+      />
+    </div>
+  );
+}
+
+// ── Advisor Declaration section ────────────────────────────────────────────
+function AdvisorDeclarationSection({ value = {}, onChange, isOpen, onToggle, productKey, clientProfile, providerResult }) {
+  const hasContent = !!(value?.declined || value?.reasons || value?.risks || value?.focussed || value?.consequences !== null && value?.consequences !== undefined);
+  const update = (field, val) => onChange({ ...value, [field]: val });
+  return (
+    <div className={`rounded-xl border overflow-hidden mb-3 transition-all ${isOpen ? 'border-blue-200 shadow-sm' : 'border-gray-200'}`}>
+      <button onClick={onToggle} className={`w-full flex items-center justify-between px-5 py-3.5 text-left transition-colors ${isOpen ? 'bg-blue-50' : 'bg-white hover:bg-gray-50'}`}>
+        <div className="flex items-center gap-3">
+          <span className="text-base">📋</span>
+          <span className="font-semibold text-sm text-gray-800">Section H — Financial Advisor's Declaration</span>
+        </div>
+        <div className="flex items-center gap-3">
+          {hasContent
+            ? <span className="text-xs text-green-600 font-semibold bg-green-50 border border-green-100 rounded-full px-2 py-0.5">✓ Completed</span>
+            : <span className="text-xs text-gray-400">Optional</span>}
+          <span className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+        </div>
+      </button>
+      {isOpen && (
+        <div className="px-5 py-4 border-t border-gray-100">
+          <p className="text-xs text-gray-500 mb-4 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            Complete items 1–5 if the client declined any recommendations, if advice was rendered on a focussed-need basis, or if no suitable product was available. Items 6 and 7 are statutory declarations pre-printed in the document.
+          </p>
+          <DeclSubField number="1" label="Product recommendations the client elected not to accept"
+            paraKey="advisorDecl_declined" value={value?.declined} onChange={v => update('declined', v)}
+            productKey={productKey} clientProfile={clientProfile} providerResult={providerResult} />
+          <DeclSubField number="2" label="Reasons the client elected not to accept the product recommendations above"
+            paraKey="advisorDecl_reasons" value={value?.reasons} onChange={v => update('reasons', v)}
+            productKey={productKey} clientProfile={clientProfile} providerResult={providerResult} />
+          <DeclSubField number="3" label="Existence of any risks to the client for not concluding the transaction recommended"
+            paraKey="advisorDecl_risks" value={value?.risks} onChange={v => update('risks', v)}
+            productKey={productKey} clientProfile={clientProfile} providerResult={providerResult} />
+          <div className="mb-4">
+            <p className="text-xs font-semibold text-gray-700 mb-2">4. The consequences thereof have been clearly explained to the Client:</p>
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="decl_consequences" checked={value?.consequences === true} onChange={() => update('consequences', true)} className="accent-blue-600" />
+                <span className="text-sm text-gray-700">Yes</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="decl_consequences" checked={value?.consequences === false} onChange={() => update('consequences', false)} className="accent-blue-600" />
+                <span className="text-sm text-gray-700">No</span>
+              </label>
+            </div>
+          </div>
+          <DeclSubField number="5" label="Where there is only a focussed need being addressed, the following was discussed and agreed with the Client"
+            paraKey="advisorDecl_focussed" value={value?.focussed} onChange={v => update('focussed', v)}
+            productKey={productKey} clientProfile={clientProfile} providerResult={providerResult} />
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-1">
+            <p className="text-xs font-semibold text-gray-500 mb-1">Items 6 & 7 are statutory declarations (always printed in the document):</p>
+            <p className="text-xs text-gray-400 italic">6. Advisor confirms client was alerted to limitations of focussed-need advice and their obligation to assess its appropriateness.</p>
+            <p className="text-xs text-gray-400 italic mt-1">7. Where no suitable product exists, advisor confirms this was explained and the client was referred to another provider.</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SectionItem({ section, isOpen, onToggle, text, onChange, productKey, clientProfile, providerResult }) {
   const hasContent = text && text.trim().length > 20;
   const wordCount  = text ? text.trim().split(/\s+/).filter(Boolean).length : 0;
@@ -209,6 +300,16 @@ export default function ContentBuilder({ productKey='unit trust', clientProfile=
           providerResult={providerResult}
         />
       ))}
+
+      <AdvisorDeclarationSection
+        value={content.advisorDeclaration || {}}
+        onChange={val => setSection('advisorDeclaration', val)}
+        isOpen={openSection === 'advisorDeclaration'}
+        onToggle={() => setOpenSection(openSection === 'advisorDeclaration' ? null : 'advisorDeclaration')}
+        productKey={productKey}
+        clientProfile={clientProfile}
+        providerResult={providerResult}
+      />
 
       <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 mt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
