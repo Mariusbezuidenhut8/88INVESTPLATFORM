@@ -271,6 +271,7 @@ export default function ProviderScoring({
   onProviderSelect,
   initialSelected = null,
   advisorOverrides = {},
+  advisorProfile = {},
 }) {
   const [selectedProvider, setSelectedProvider] = useState(initialSelected);
   const [expandedRow, setExpandedRow]           = useState(null);
@@ -278,11 +279,13 @@ export default function ProviderScoring({
   const [filterTier, setFilterTier]             = useState('all');
   const [filterType, setFilterType]             = useState('all');
 
-  // ── Ranked list ──
-  const allRanked = useMemo(
-    () => rankProvidersForProduct(productKey),
-    [productKey]
-  );
+  // ── Ranked list — filtered to advisor's active providers if configured ──
+  const allRanked = useMemo(() => {
+    const ranked = rankProvidersForProduct(productKey);
+    const active = advisorProfile?.activeProviders;
+    if (!active?.length) return ranked;
+    return ranked.filter(p => active.includes(p.name));
+  }, [productKey, advisorProfile]);
 
   // ── Filter ──
   const filtered = useMemo(() => {

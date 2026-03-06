@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { saveProfile, loadProfile } from '../shared/storage.js';
 import { isValidEmail, isValidPhone } from '../shared/ui.js';
+import { getAllProviderNames } from '../data/providerDB.js';
 
 function Field({ label, value, onChange, type='text', placeholder='', hint, error, required }) {
   return (
@@ -22,6 +23,62 @@ function Toggle({ label, description, value, onChange }) {
       <div><p className="text-sm font-medium text-gray-700">{label}</p><p className="text-xs text-gray-400">{description}</p></div>
       <div onClick={() => onChange(!value)} className={`w-11 h-6 rounded-full flex items-center px-0.5 cursor-pointer flex-shrink-0 ${value!==false?'bg-blue-500':'bg-gray-300'}`}>
         <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${value!==false?'translate-x-5':'translate-x-0'}`} />
+      </div>
+    </div>
+  );
+}
+
+// ── Platform Provider selector ─────────────────────────────────────────────
+const ALL_PROVIDERS = getAllProviderNames();
+
+function ProviderSelector({ activeProviders, onChange }) {
+  const activeSet = useMemo(
+    () => new Set(activeProviders?.length ? activeProviders : ALL_PROVIDERS),
+    [activeProviders]
+  );
+  const activeCount = activeSet.size;
+
+  const toggle = (name) => {
+    const next = new Set(activeSet);
+    if (next.has(name)) next.delete(name); else next.add(name);
+    const arr = [...next];
+    onChange(arr.length === ALL_PROVIDERS.length ? [] : arr);
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-700">Platform Providers</p>
+          <p className="text-xs text-gray-400 mt-0.5">Only ticked providers appear in the scoring matrix. Untick providers not on your approved panel.</p>
+        </div>
+        <span className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2.5 py-0.5 ml-3 flex-shrink-0">
+          {activeCount} / {ALL_PROVIDERS.length} active
+        </span>
+      </div>
+      <div className="px-5 py-4">
+        <div className="flex gap-3 mb-3">
+          <button onClick={() => onChange([])}
+            className="text-xs text-blue-600 hover:text-blue-800 underline">Select all</button>
+          <button onClick={() => onChange([ALL_PROVIDERS[0]])}
+            className="text-xs text-gray-400 hover:text-gray-600 underline">Deselect all</button>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-60 overflow-y-auto pr-1">
+          {ALL_PROVIDERS.map(name => {
+            const on = activeSet.has(name);
+            return (
+              <label key={name} className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 cursor-pointer transition-colors text-xs select-none ${on ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-gray-200 bg-gray-50 text-gray-400'}`}>
+                <input type="checkbox" checked={on} onChange={() => toggle(name)} className="accent-blue-600 flex-shrink-0" />
+                <span className="truncate font-medium">{name}</span>
+              </label>
+            );
+          })}
+        </div>
+        {activeProviders?.length > 0 && (
+          <p className="text-xs text-amber-600 mt-3 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            {activeProviders.length} of {ALL_PROVIDERS.length} providers active — only these will be scored and recommended.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -145,6 +202,8 @@ export default function ProfileSettings({ onClose, onChange }) {
               </div>
             </div>
           </div>
+
+          <ProviderSelector activeProviders={profile.activeProviders} onChange={v => set('activeProviders', v)} />
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-5 py-3 bg-gray-50 border-b border-gray-100"><p className="text-sm font-semibold text-gray-700">App Settings</p></div>
