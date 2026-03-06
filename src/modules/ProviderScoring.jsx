@@ -344,6 +344,12 @@ export default function ProviderScoring({
           {allRanked.length} providers ranked by weighted due diligence score across 5 categories and 15 sub-criteria.
           Select the recommended provider for the ROA.
         </p>
+        {advisorProfile?.activeProviders?.length > 0 && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <span>⚠</span>
+            <span>Filtered to your approved panel: <strong>{advisorProfile.activeProviders.length} providers</strong> selected in Settings. Non-panel providers are excluded.</span>
+          </div>
+        )}
       </div>
 
       {/* Top 3 cards */}

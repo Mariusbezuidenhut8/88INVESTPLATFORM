@@ -203,7 +203,17 @@ export default function ProfileSettings({ onClose, onChange }) {
             </div>
           </div>
 
-          <ProviderSelector activeProviders={profile.activeProviders} onChange={v => set('activeProviders', v)} />
+          <ProviderSelector
+            activeProviders={profile.activeProviders}
+            onChange={v => {
+              set('activeProviders', v);
+              // Save immediately — don't wait for full form save / validation
+              const stored = loadProfile();
+              const updated = { ...stored, activeProviders: v };
+              saveProfile(updated);
+              if (onChange) onChange(updated);
+            }}
+          />
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-5 py-3 bg-gray-50 border-b border-gray-100"><p className="text-sm font-semibold text-gray-700">App Settings</p></div>
