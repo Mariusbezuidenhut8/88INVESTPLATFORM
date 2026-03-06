@@ -3375,7 +3375,7 @@ export const PROVIDER_META = {
  * Compute weighted score for a provider for a specific product.
  * Returns { total, breakdown } where breakdown is per-category.
  */
-export const computeProviderScore = (providerName, productKey) => {
+export const computeProviderScore = (providerName, productKey, categoryMultipliers = {}) => {
   const providerData = PROVIDER_SCORES[providerName];
   if (!providerData || !providerData[productKey]) return { total: 0, breakdown: {} };
   
@@ -3385,12 +3385,12 @@ export const computeProviderScore = (providerName, productKey) => {
   const breakdown = {};
 
   Object.entries(subcats).forEach(([subcat, data]) => {
-    const w = data.weight || 0;
+    const cat = SUBCATEGORY_WEIGHTS[subcat]?.category || 'Other';
+    const multiplier = categoryMultipliers[cat] ?? 1.0;
+    const w = (data.weight || 0) * multiplier;
     const s = data.score || 0;
     totalScore += s * w;
     totalWeight += w;
-    
-    const cat = SUBCATEGORY_WEIGHTS[subcat]?.category || 'Other';
     if (!breakdown[cat]) breakdown[cat] = { score: 0, weight: 0 };
     breakdown[cat].score += s * w;
     breakdown[cat].weight += w;
@@ -3415,11 +3415,11 @@ export const computeProviderScore = (providerName, productKey) => {
  * @param {number} topN - how many to return (default 3)
  * @returns Array of { name, score, tier, type, breakdown }
  */
-export const rankProvidersForProduct = (productKey, topN = 30) => {
+export const rankProvidersForProduct = (productKey, topN = 30, categoryMultipliers = {}) => {
   return Object.keys(PROVIDER_SCORES)
     .filter(name => PROVIDER_SCORES[name][productKey])
     .map(name => {
-      const { total, breakdown } = computeProviderScore(name, productKey);
+      const { total, breakdown } = computeProviderScore(name, productKey, categoryMultipliers);
       const meta = PROVIDER_META[name] || {};
       return { name, score: total, tier: meta.tier, type: meta.type, breakdown };
     })
