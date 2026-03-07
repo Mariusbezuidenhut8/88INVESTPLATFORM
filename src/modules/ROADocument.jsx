@@ -328,13 +328,13 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
         </DocSection>
 
         {/* ── FNA. FINANCIAL NEEDS ANALYSIS (conditional) ── */}
-        {retirementCalc?.results && (
-          <DocSection number="FNA" title="Financial Needs Analysis">
+        {retirementCalc?.results && retirementCalc.calcType !== 'goal' && (
+          <DocSection number="FNA" title="Financial Needs Analysis — Retirement Planning">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
               {[
-                { label: 'Corpus Needed', value: formatCurrency(retirementCalc.results.corpus), colour: 'bg-gray-50 border-gray-200' },
+                { label: 'Corpus Needed',                value: formatCurrency(retirementCalc.results.corpus),       colour: 'bg-gray-50 border-gray-200' },
                 { label: retirementCalc.results.shortfall > 0 ? 'Shortfall' : 'Surplus', value: formatCurrency(retirementCalc.results.shortfall || retirementCalc.results.surplus), colour: retirementCalc.results.shortfall > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200' },
-                { label: 'Provisions at Retirement', value: formatCurrency(retirementCalc.results.provisionsFV), colour: 'bg-blue-50 border-blue-200' },
+                { label: 'Provisions at Retirement',     value: formatCurrency(retirementCalc.results.provisionsFV), colour: 'bg-blue-50 border-blue-200' },
                 { label: 'Monthly Contribution Required', value: retirementCalc.results.requiredMonthly > 0 ? formatCurrency(retirementCalc.results.requiredMonthly) : '—', colour: 'bg-amber-50 border-amber-200' },
               ].map(card => (
                 <div key={card.label} className={`border rounded-lg px-3 py-2 ${card.colour}`}>
@@ -361,10 +361,59 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
                     {retirementCalc.provisions.map((p, i) => (
                       <tr key={i}>
                         <td className="px-3 py-1.5 border border-gray-200">{p.description || '—'}</td>
-                        <td className="px-3 py-1.5 border border-gray-200">{p.type || '—'}</td>
+                        <td className="px-3 py-1.5 border border-gray-200">{p.type || p.assetType || '—'}</td>
                         <td className="px-3 py-1.5 border border-gray-200 text-right">{p.currentValue ? formatCurrency(p.currentValue) : '—'}</td>
                         <td className="px-3 py-1.5 border border-gray-200 text-right">{p.monthlyContribution ? formatCurrency(p.monthlyContribution) : '—'}</td>
                         <td className="px-3 py-1.5 border border-gray-200 text-right font-medium">{formatCurrency(provisionFV(p, retirementCalc.results.ytr))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </DocSection>
+        )}
+
+        {/* ── FNA (goal planner variant) ── */}
+        {retirementCalc?.results && retirementCalc.calcType === 'goal' && (
+          <DocSection number="FNA" title={`Financial Needs Analysis — Savings Goal${retirementCalc.goalDescription ? `: ${retirementCalc.goalDescription}` : ''}`}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              {[
+                { label: 'Goal Amount (future money)',    value: formatCurrency(retirementCalc.results.goalFV),        colour: 'bg-gray-50 border-gray-200' },
+                { label: retirementCalc.results.shortfall > 0 ? 'Shortfall' : 'Surplus', value: formatCurrency(retirementCalc.results.shortfall || retirementCalc.results.surplus), colour: retirementCalc.results.shortfall > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200' },
+                { label: 'Provisions at Target Date',     value: formatCurrency(retirementCalc.results.provisionsFV),  colour: 'bg-blue-50 border-blue-200' },
+                { label: 'Monthly Contribution Required', value: retirementCalc.results.requiredMonthly > 0 ? formatCurrency(retirementCalc.results.requiredMonthly) : '—', colour: 'bg-amber-50 border-amber-200' },
+              ].map(card => (
+                <div key={card.label} className={`border rounded-lg px-3 py-2 ${card.colour}`}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{card.label}</p>
+                  <p className="text-sm font-bold text-gray-900">{card.value}</p>
+                </div>
+              ))}
+            </div>
+            <table className="w-full text-xs border-collapse mb-3">
+              <tbody>
+                <tr className="bg-gray-50"><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600 w-48">Target Amount (today's money)</td><td className="px-3 py-1.5 border border-gray-200">{formatCurrency(retirementCalc.targetAmount)}</td></tr>
+                <tr><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Time Horizon</td><td className="px-3 py-1.5 border border-gray-200">{retirementCalc.yearsToGoal} years</td></tr>
+                <tr className="bg-gray-50"><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Coverage</td><td className="px-3 py-1.5 border border-gray-200">{retirementCalc.results.coveragePct.toFixed(1)}%</td></tr>
+                {retirementCalc.results.shortfall > 0 && (
+                  <tr><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Lump Sum Required (invest now)</td><td className="px-3 py-1.5 border border-gray-200">{formatCurrency(retirementCalc.results.requiredLumpSum)}</td></tr>
+                )}
+                <tr className="bg-gray-50"><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Assumptions</td><td className="px-3 py-1.5 border border-gray-200">Growth {retirementCalc.growthRate}% · Escalation {retirementCalc.goalEscalation}%</td></tr>
+              </tbody>
+            </table>
+            {retirementCalc.provisions?.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Existing Provisions</p>
+                <table className="w-full text-xs border-collapse">
+                  <thead><tr className="bg-gray-100"><th className="text-left px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Description</th><th className="text-left px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Asset Type</th><th className="text-right px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Current Value</th><th className="text-right px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Monthly</th><th className="text-right px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Projected FV</th></tr></thead>
+                  <tbody>
+                    {retirementCalc.provisions.map((p, i) => (
+                      <tr key={i}>
+                        <td className="px-3 py-1.5 border border-gray-200">{p.description || '—'}</td>
+                        <td className="px-3 py-1.5 border border-gray-200">{p.assetType || p.type || '—'}</td>
+                        <td className="px-3 py-1.5 border border-gray-200 text-right">{p.currentValue ? formatCurrency(p.currentValue) : '—'}</td>
+                        <td className="px-3 py-1.5 border border-gray-200 text-right">{p.monthlyContribution ? formatCurrency(p.monthlyContribution) : '—'}</td>
+                        <td className="px-3 py-1.5 border border-gray-200 text-right font-medium">{formatCurrency(provisionFV(p, retirementCalc.yearsToGoal))}</td>
                       </tr>
                     ))}
                   </tbody>

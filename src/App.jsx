@@ -19,7 +19,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import ClientProfile         from './modules/ClientProfile.jsx';
-import RetirementCalculator  from './modules/RetirementCalculator.jsx';
+import NeedsAnalysis         from './modules/NeedsAnalysis.jsx';
 import DecisionTree          from './modules/DecisionTree.jsx';
 import ProviderScoring from './modules/ProviderScoring.jsx';
 import FeeDisclosure   from './modules/FeeDisclosure.jsx';
@@ -265,7 +265,7 @@ export default function App() {
         )}
 
         {step === 'calc' && (
-          <RetirementCalculator
+          <NeedsAnalysis
             clientProfile={roaData.clientProfile}
             initialData={roaData.retirementCalc}
             onChange={calcData => updateRoa({ retirementCalc: calcData })}
