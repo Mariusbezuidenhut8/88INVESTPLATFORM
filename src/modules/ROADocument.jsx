@@ -32,6 +32,18 @@ import { PROVIDER_META } from '../data/providerDB.js';
 import { PRODUCT_CATALOGUE } from '../data/productCatalogue.js';
 import { LIMITS } from '../data/productReference.js';
 
+// ── FNA provision FV helper ────────────────────────────────────────────────
+function provisionFV(p, ytr) {
+  const pv = Number(p.currentValue) || 0;
+  const pm = Number(p.monthlyContribution) || 0;
+  const pr = (Number(p.growthRate) || 10) / 100;
+  const monthly_r = Math.pow(1 + pr, 1 / 12) - 1;
+  const n = ytr * 12;
+  let fv = pv * Math.pow(1 + pr, ytr);
+  if (pm > 0 && monthly_r > 0.000001) fv += pm * (Math.pow(1 + monthly_r, n) - 1) / monthly_r;
+  return fv;
+}
+
 // ── Print styles injected into head ───────────────────────────────────────
 const PRINT_CSS = `
 @media print {
@@ -192,6 +204,7 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
 
   const {
     clientProfile   = {},
+    retirementCalc  = {},
     treeResult      = {},
     providerResult  = {},
     providerResult2 = {},
@@ -313,6 +326,53 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
             )}
           </div>
         </DocSection>
+
+        {/* ── FNA. FINANCIAL NEEDS ANALYSIS (conditional) ── */}
+        {retirementCalc?.results && (
+          <DocSection number="FNA" title="Financial Needs Analysis">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              {[
+                { label: 'Corpus Needed', value: formatCurrency(retirementCalc.results.corpus), colour: 'bg-gray-50 border-gray-200' },
+                { label: retirementCalc.results.shortfall > 0 ? 'Shortfall' : 'Surplus', value: formatCurrency(retirementCalc.results.shortfall || retirementCalc.results.surplus), colour: retirementCalc.results.shortfall > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200' },
+                { label: 'Provisions at Retirement', value: formatCurrency(retirementCalc.results.provisionsFV), colour: 'bg-blue-50 border-blue-200' },
+                { label: 'Monthly Contribution Required', value: retirementCalc.results.requiredMonthly > 0 ? formatCurrency(retirementCalc.results.requiredMonthly) : '—', colour: 'bg-amber-50 border-amber-200' },
+              ].map(card => (
+                <div key={card.label} className={`border rounded-lg px-3 py-2 ${card.colour}`}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{card.label}</p>
+                  <p className="text-sm font-bold text-gray-900">{card.value}</p>
+                </div>
+              ))}
+            </div>
+            <table className="w-full text-xs border-collapse mb-3">
+              <tbody>
+                <tr className="bg-gray-50"><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600 w-48">Current Monthly Expenses</td><td className="px-3 py-1.5 border border-gray-200">{formatCurrency(retirementCalc.results.totalMonthlyNow)} / month</td></tr>
+                <tr><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Income Needed at Retirement</td><td className="px-3 py-1.5 border border-gray-200">{formatCurrency(retirementCalc.results.annualFuture / 12)} / month (future money)</td></tr>
+                <tr className="bg-gray-50"><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Coverage</td><td className="px-3 py-1.5 border border-gray-200">{retirementCalc.results.coveragePct.toFixed(1)}%</td></tr>
+                <tr><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Retirement Age / Duration</td><td className="px-3 py-1.5 border border-gray-200">{retirementCalc.retirementAge} — {retirementCalc.yearsInRetirement} years in retirement</td></tr>
+                <tr className="bg-gray-50"><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Assumptions</td><td className="px-3 py-1.5 border border-gray-200">Growth {retirementCalc.growthRate}% · Inflation {retirementCalc.inflationRate}% · Advisor fees {retirementCalc.advisorFees}%</td></tr>
+              </tbody>
+            </table>
+            {retirementCalc.provisions?.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Existing Provisions</p>
+                <table className="w-full text-xs border-collapse">
+                  <thead><tr className="bg-gray-100"><th className="text-left px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Description</th><th className="text-left px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Type</th><th className="text-right px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Current Value</th><th className="text-right px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Monthly</th><th className="text-right px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Projected FV</th></tr></thead>
+                  <tbody>
+                    {retirementCalc.provisions.map((p, i) => (
+                      <tr key={i}>
+                        <td className="px-3 py-1.5 border border-gray-200">{p.description || '—'}</td>
+                        <td className="px-3 py-1.5 border border-gray-200">{p.type || '—'}</td>
+                        <td className="px-3 py-1.5 border border-gray-200 text-right">{p.currentValue ? formatCurrency(p.currentValue) : '—'}</td>
+                        <td className="px-3 py-1.5 border border-gray-200 text-right">{p.monthlyContribution ? formatCurrency(p.monthlyContribution) : '—'}</td>
+                        <td className="px-3 py-1.5 border border-gray-200 text-right font-medium">{formatCurrency(provisionFV(p, retirementCalc.results.ytr))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </DocSection>
+        )}
 
         {/* ── 3. CLIENT NEEDS ── */}
         <DocSection number="3" title="Client Needs & Objectives">

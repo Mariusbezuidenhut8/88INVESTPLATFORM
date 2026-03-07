@@ -18,8 +18,9 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import ClientProfile   from './modules/ClientProfile.jsx';
-import DecisionTree    from './modules/DecisionTree.jsx';
+import ClientProfile         from './modules/ClientProfile.jsx';
+import RetirementCalculator  from './modules/RetirementCalculator.jsx';
+import DecisionTree          from './modules/DecisionTree.jsx';
 import ProviderScoring from './modules/ProviderScoring.jsx';
 import FeeDisclosure   from './modules/FeeDisclosure.jsx';
 import ContentBuilder  from './modules/ContentBuilder.jsx';
@@ -36,6 +37,7 @@ import { getProductLabel } from './shared/ui.js';
 // ── Step definitions ───────────────────────────────────────────────────────
 const STEPS = [
   { id: 'client',   label: 'Client Profile',     icon: '👤' },
+  { id: 'calc',     label: 'Needs Analysis',      icon: '📊' },
   { id: 'tree',     label: 'Product Type',        icon: '🌳' },
   { id: 'scoring',  label: 'Provider Selection',  icon: '🏦' },
   { id: 'fees',     label: 'Fee Disclosure',       icon: '💰' },
@@ -86,12 +88,13 @@ export default function App() {
   const [roaData,        setRoaData]        = useState({
     id:            generateROAId(),
     createdAt:     new Date().toISOString(),
-    clientProfile: {},
-    treeResult:    {},
-    providerResult:{},
-    providerResult2:{},
-    content:       {},
-    fees:          {},
+    clientProfile:   {},
+    retirementCalc:  {},
+    treeResult:      {},
+    providerResult:  {},
+    providerResult2: {},
+    content:         {},
+    fees:            {},
   });
   const [scoringPhase, setScoringPhase] = useState(1);
   const roaDataRef = useRef(roaData);
@@ -135,8 +138,19 @@ export default function App() {
   const handleClientComplete = useCallback((profile) => {
     updateRoa({ clientProfile: profile });
     markComplete('client');
+    setStep('calc');
+  }, [updateRoa, markComplete]);
+
+  const handleCalcComplete = useCallback((calcData) => {
+    updateRoa({ retirementCalc: calcData });
+    markComplete('calc');
     setStep('tree');
   }, [updateRoa, markComplete]);
+
+  const handleCalcSkip = useCallback(() => {
+    markComplete('calc');
+    setStep('tree');
+  }, [markComplete]);
 
   const handleTreeRecommendation = useCallback((result) => {
     updateRoa({ treeResult: result });
@@ -191,7 +205,7 @@ export default function App() {
   const handleNewROA = useCallback(() => {
     if (window.confirm('Start a new ROA? Unsaved progress will be lost.')) {
       clearDraft();
-      setRoaData({ id: generateROAId(), createdAt: new Date().toISOString(), clientProfile:{}, treeResult:{}, providerResult:{}, providerResult2:{}, content:{}, fees:{} });
+      setRoaData({ id: generateROAId(), createdAt: new Date().toISOString(), clientProfile:{}, retirementCalc:{}, treeResult:{}, providerResult:{}, providerResult2:{}, content:{}, fees:{} });
       setCompleted([]);
       setStep('client');
     }
@@ -250,6 +264,16 @@ export default function App() {
           />
         )}
 
+        {step === 'calc' && (
+          <RetirementCalculator
+            clientProfile={roaData.clientProfile}
+            initialData={roaData.retirementCalc}
+            onChange={calcData => updateRoa({ retirementCalc: calcData })}
+            onComplete={handleCalcComplete}
+            onSkip={handleCalcSkip}
+          />
+        )}
+
         {step === 'tree' && (
           <DecisionTree
             onRecommendation={handleTreeRecommendation}
@@ -299,6 +323,7 @@ export default function App() {
           <ContentBuilder
             productKey={productKey}
             clientProfile={roaData.clientProfile}
+            retirementCalc={roaData.retirementCalc}
             treeResult={roaData.treeResult}
             providerResult={roaData.providerResult}
             providerResult2={roaData.providerResult2}
