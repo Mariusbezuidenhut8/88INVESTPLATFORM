@@ -17,7 +17,7 @@
  *   - Saved ROAs
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import ClientProfile   from './modules/ClientProfile.jsx';
 import DecisionTree    from './modules/DecisionTree.jsx';
 import ProviderScoring from './modules/ProviderScoring.jsx';
@@ -89,9 +89,13 @@ export default function App() {
     clientProfile: {},
     treeResult:    {},
     providerResult:{},
+    providerResult2:{},
     content:       {},
     fees:          {},
   });
+  const [scoringPhase, setScoringPhase] = useState(1);
+  const roaDataRef = useRef(roaData);
+  useEffect(() => { roaDataRef.current = roaData; }, [roaData]);
 
   // Admin overlays
   const [showSettings,   setShowSettings]   = useState(false);
@@ -137,6 +141,7 @@ export default function App() {
   const handleTreeRecommendation = useCallback((result) => {
     updateRoa({ treeResult: result });
     markComplete('tree');
+    setScoringPhase(1);
     // Skip scoring for non-scoreable products
     setStep(result.scoreable ? 'scoring' : 'fees');
     if (!result.scoreable) markComplete('scoring');
@@ -144,6 +149,17 @@ export default function App() {
 
   const handleProviderSelect = useCallback((result) => {
     updateRoa({ providerResult: result });
+    const tr = roaDataRef.current.treeResult;
+    if (tr.secondaryScoreable) {
+      setScoringPhase(2);
+    } else {
+      markComplete('scoring');
+      setStep('fees');
+    }
+  }, [updateRoa, markComplete]);
+
+  const handleProvider2Select = useCallback((result) => {
+    updateRoa({ providerResult2: result });
     markComplete('scoring');
     setStep('fees');
   }, [updateRoa, markComplete]);
@@ -175,7 +191,7 @@ export default function App() {
   const handleNewROA = useCallback(() => {
     if (window.confirm('Start a new ROA? Unsaved progress will be lost.')) {
       clearDraft();
-      setRoaData({ id: generateROAId(), createdAt: new Date().toISOString(), clientProfile:{}, treeResult:{}, providerResult:{}, content:{}, fees:{} });
+      setRoaData({ id: generateROAId(), createdAt: new Date().toISOString(), clientProfile:{}, treeResult:{}, providerResult:{}, providerResult2:{}, content:{}, fees:{} });
       setCompleted([]);
       setStep('client');
     }
@@ -238,10 +254,11 @@ export default function App() {
           <DecisionTree
             onRecommendation={handleTreeRecommendation}
             initialPath={roaData.treeResult?.path}
+            investmentAmount={roaData.clientProfile?.investmentAmount}
           />
         )}
 
-        {step === 'scoring' && roaData.treeResult?.productKey && (
+        {step === 'scoring' && roaData.treeResult?.productKey && scoringPhase === 1 && (
           <ProviderScoring
             productKey={productKey}
             productLabel={getProductLabel(productKey)}
@@ -249,6 +266,22 @@ export default function App() {
             initialSelected={roaData.providerResult?.recommended?.name}
             advisorProfile={advisorProfile}
           />
+        )}
+
+        {step === 'scoring' && roaData.treeResult?.secondaryProductKey && scoringPhase === 2 && (
+          <div>
+            <div className="max-w-3xl mx-auto mb-4 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800">
+              <span className="font-semibold">Provider Scoring — Step 2 of 2:</span>
+              <span>{roaData.treeResult.secondaryProductLabel}</span>
+            </div>
+            <ProviderScoring
+              productKey={roaData.treeResult.secondaryProductKey}
+              productLabel={roaData.treeResult.secondaryProductLabel}
+              onProviderSelect={handleProvider2Select}
+              initialSelected={roaData.providerResult2?.recommended?.name}
+              advisorProfile={advisorProfile}
+            />
+          </div>
         )}
 
         {step === 'fees' && (
@@ -266,7 +299,9 @@ export default function App() {
           <ContentBuilder
             productKey={productKey}
             clientProfile={roaData.clientProfile}
+            treeResult={roaData.treeResult}
             providerResult={roaData.providerResult}
+            providerResult2={roaData.providerResult2}
             initialContent={roaData.content}
             onChange={content => updateRoa({ content })}
             onComplete={handleContentComplete}

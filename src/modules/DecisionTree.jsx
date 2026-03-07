@@ -9,6 +9,7 @@
  *                               result: { productKey, productLabel, rationale, flags, path }
  *   onReset()                 — called when user clicks "Start Over"
  *   initialPath               — optional array of prior answers to restore state
+ *   investmentAmount          — optional number, used to pre-fill split amounts
  *
  * The component is self-contained: it reads DECISION_TREE from productTree.js
  * and manages its own traversal state. On recommendation, it calls the parent
@@ -163,12 +164,67 @@ function FlagPills({ flags }) {
   );
 }
 
+// ─── Secondary product options ─────────────────────────────────────────────
+const ALL_SECONDARY_PRODUCTS = [
+  { key: 'unit trust',          label: 'Unit Trust / Discretionary Investment' },
+  { key: 'RETIREMENT ANNUITY',  label: 'Retirement Annuity (RA)' },
+  { key: 'ENDOWMENT',           label: 'Endowment Policy' },
+  { key: 'Tax-Free savings',    label: 'Tax-Free Savings Account (TFSA)' },
+  { key: 'Living Annuity',      label: 'Living Annuity' },
+  { key: 'preservation nfund',  label: 'Preservation Fund' },
+  { key: 'FIXED DEPOSIT',       label: 'Fixed Deposit' },
+  { key: 'MONEY MARKET',        label: 'Money Market / Call Account' },
+  { key: 'RSA BONDS',           label: 'RSA Retail Savings Bonds' },
+];
+
 // ─── Recommendation card ───────────────────────────────────────────────────
-function RecommendationCard({ node, path, onAccept, onReset }) {
+function RecommendationCard({ node, path, onAccept, onReset, investmentAmount = 0 }) {
   const rec  = node.recommendation;
   const col  = getColour(rec.productKey);
   const icon = PRODUCT_ICONS[rec.productKey] || '📌';
   const scoreable = isWithinScoringModel(rec.productKey);
+
+  // ── Split state ──
+  const [showSplit,     setShowSplit]     = useState(false);
+  const [secondaryKey,  setSecondaryKey]  = useState('unit trust');
+
+  // Default primary amount: for TFSA use annual limit, for RA use deduction cap, else full amount
+  const defaultPrimary = (() => {
+    const amt = Number(investmentAmount) || 0;
+    if (!amt) return 0;
+    if (rec.productKey === 'Tax-Free savings') return Math.min(amt, LIMITS.tfsaAnnual);
+    if (rec.productKey === 'RETIREMENT ANNUITY') return Math.min(amt, LIMITS.raDeductionCap);
+    return amt;
+  })();
+
+  const [primaryAmt,   setPrimaryAmt]   = useState(defaultPrimary);
+  const [secondaryAmt, setSecondaryAmt] = useState(
+    investmentAmount > 0 ? Math.max(0, Number(investmentAmount) - defaultPrimary) : 0
+  );
+
+  const total = Number(investmentAmount) || 0;
+  const balance = total - Number(primaryAmt || 0) - Number(secondaryAmt || 0);
+  const balanceOk = Math.abs(balance) < 1;
+
+  const handlePrimaryAmtChange = (val) => {
+    const p = Number(val) || 0;
+    setPrimaryAmt(p);
+    if (total > 0) setSecondaryAmt(Math.max(0, total - p));
+  };
+
+  const handleSecondaryAmtChange = (val) => {
+    const s = Number(val) || 0;
+    setSecondaryAmt(s);
+    if (total > 0) setPrimaryAmt(Math.max(0, total - s));
+  };
+
+  const splitConfig = showSplit ? {
+    secondaryProductKey: secondaryKey,
+    splitAmounts: { primary: Number(primaryAmt) || 0, secondary: Number(secondaryAmt) || 0 },
+  } : null;
+
+  // Filter out the primary product from secondary options
+  const secondaryOptions = ALL_SECONDARY_PRODUCTS.filter(p => p.key !== rec.productKey);
 
   return (
     <div className={`rounded-xl border-2 ${col.border} ${col.bg} p-6`}>
@@ -196,6 +252,86 @@ function RecommendationCard({ node, path, onAccept, onReset }) {
       {/* Flags */}
       <FlagPills flags={rec.flags} />
 
+      {/* ── Split investment panel ── */}
+      {!showSplit ? (
+        <div className="mt-4">
+          <button
+            onClick={() => setShowSplit(true)}
+            className="text-xs text-blue-600 hover:text-blue-800 border border-blue-200 bg-blue-50 hover:bg-blue-100 rounded-lg px-3 py-2 transition-colors flex items-center gap-1.5"
+          >
+            <span>+</span>
+            <span>Split investment across two products</span>
+          </button>
+          {rec.flags?.includes('tfsa_limit') && total > LIMITS.tfsaAnnual && (
+            <p className="text-xs text-amber-600 mt-2 bg-amber-50 border border-amber-100 rounded px-2.5 py-1.5">
+              TFSA annual limit is {formatCurrency(LIMITS.tfsaAnnual)}. Consider investing the remainder in a second product.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-4 bg-white bg-opacity-80 border border-gray-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Split Investment</p>
+            <button onClick={() => setShowSplit(false)} className="text-xs text-gray-400 hover:text-gray-600">Remove split</button>
+          </div>
+
+          {/* Row 1: Primary product */}
+          <div className="flex items-center gap-3 mb-2">
+            <div className={`flex-1 text-xs font-semibold ${col.text} bg-white border ${col.border} rounded-lg px-3 py-2 truncate`}>
+              {PRODUCT_ICONS[rec.productKey]} {getProductLabel(rec.productKey)}
+            </div>
+            <div className="relative flex-shrink-0 w-36">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">R</span>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                value={primaryAmt}
+                onChange={e => handlePrimaryAmtChange(e.target.value)}
+                className="w-full text-sm border border-gray-200 rounded-lg pl-6 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right"
+              />
+            </div>
+          </div>
+
+          {/* Row 2: Secondary product */}
+          <div className="flex items-center gap-3 mb-3">
+            <select
+              value={secondaryKey}
+              onChange={e => setSecondaryKey(e.target.value)}
+              className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+            >
+              {secondaryOptions.map(p => (
+                <option key={p.key} value={p.key}>{p.label}</option>
+              ))}
+            </select>
+            <div className="relative flex-shrink-0 w-36">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">R</span>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                value={secondaryAmt}
+                onChange={e => handleSecondaryAmtChange(e.target.value)}
+                className="w-full text-sm border border-gray-200 rounded-lg pl-6 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right"
+              />
+            </div>
+          </div>
+
+          {/* Balance indicator */}
+          {total > 0 && (
+            <div className={`text-xs rounded-lg px-3 py-2 flex items-center justify-between ${
+              balanceOk ? 'bg-green-50 text-green-700 border border-green-200'
+                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+            }`}>
+              <span>Total investment: {formatCurrency(total)}</span>
+              <span className="font-semibold">
+                {balanceOk ? 'Balanced' : `Unallocated: ${formatCurrency(Math.abs(balance))}`}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Path summary */}
       <div className="mt-5 pt-4 border-t border-gray-200">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Decision Path</p>
@@ -212,10 +348,12 @@ function RecommendationCard({ node, path, onAccept, onReset }) {
       {/* CTA */}
       <div className="flex gap-3 mt-6">
         <button
-          onClick={() => onAccept(rec, path)}
+          onClick={() => onAccept(rec, path, splitConfig)}
           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-lg transition-colors text-sm"
         >
-          {scoreable ? 'Continue to Provider Scoring →' : 'Accept Recommendation →'}
+          {splitConfig
+            ? 'Continue — 2 Products →'
+            : scoreable ? 'Continue to Provider Scoring →' : 'Accept Recommendation →'}
         </button>
         <button
           onClick={onReset}
@@ -225,7 +363,7 @@ function RecommendationCard({ node, path, onAccept, onReset }) {
         </button>
       </div>
 
-      {!scoreable && (
+      {!scoreable && !splitConfig && (
         <p className="text-xs text-gray-400 mt-3 text-center">
           This product type is outside the platform scoring model. The recommendation will be recorded in the ROA without provider comparison.
         </p>
@@ -238,7 +376,7 @@ function RecommendationCard({ node, path, onAccept, onReset }) {
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════════
 
-export default function DecisionTree({ onRecommendation, onReset: externalReset, initialPath = [] }) {
+export default function DecisionTree({ onRecommendation, onReset: externalReset, initialPath = [], investmentAmount = 0 }) {
 
   const [currentNodeId, setCurrentNodeId] = useState('root');
   const [history, setHistory]             = useState([]); // [{ nodeId, answer, selectedValue }]
@@ -270,12 +408,6 @@ export default function DecisionTree({ onRecommendation, onReset: externalReset,
 
   // ── Jump back to a prior step ──
   const handleJumpTo = useCallback((historyIndex) => {
-    const truncated = history.slice(0, historyIndex);
-    setHistory(truncated);
-    setCurrentNodeId(truncated.length ? DECISION_TREE[truncated[truncated.length - 1].nodeId]
-      ? history[historyIndex - 1]?.nodeId || 'root'
-      : 'root' : 'root');
-    // Simpler: restore to the node that was current at that point
     const targetNode = historyIndex === 0 ? 'root' : history[historyIndex].nodeId;
     setHistory(history.slice(0, historyIndex));
     setCurrentNodeId(targetNode);
@@ -289,7 +421,7 @@ export default function DecisionTree({ onRecommendation, onReset: externalReset,
   }, [externalReset]);
 
   // ── Accept recommendation ──
-  const handleAccept = useCallback((rec, path) => {
+  const handleAccept = useCallback((rec, path, splitConfig) => {
     if (onRecommendation) {
       onRecommendation({
         productKey:   rec.productKey,
@@ -298,6 +430,12 @@ export default function DecisionTree({ onRecommendation, onReset: externalReset,
         flags:        rec.flags || [],
         path:         path,
         scoreable:    isWithinScoringModel(rec.productKey),
+        ...(splitConfig && {
+          secondaryProductKey:   splitConfig.secondaryProductKey,
+          secondaryProductLabel: getProductLabel(splitConfig.secondaryProductKey),
+          secondaryScoreable:    isWithinScoringModel(splitConfig.secondaryProductKey),
+          splitAmounts:          splitConfig.splitAmounts,
+        }),
       });
     }
   }, [onRecommendation]);
@@ -332,6 +470,7 @@ export default function DecisionTree({ onRecommendation, onReset: externalReset,
             path={history}
             onAccept={handleAccept}
             onReset={handleReset}
+            investmentAmount={investmentAmount}
           />
         )}
 

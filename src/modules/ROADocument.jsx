@@ -194,6 +194,7 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
     clientProfile   = {},
     treeResult      = {},
     providerResult  = {},
+    providerResult2 = {},
     content         = {},
     fees            = {},
     createdAt,
@@ -340,6 +341,9 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recommended Product</p>
               <p className="text-lg font-bold text-gray-900 mt-0.5">{getProductLabel(providerResult?.productKey || treeResult?.productKey)}</p>
+              {treeResult?.secondaryProductKey && (
+                <p className="text-sm font-semibold text-gray-700 mt-0.5">+ {getProductLabel(treeResult.secondaryProductKey)}</p>
+              )}
             </div>
             {treeResult?.flags?.length > 0 && (
               <div className="flex flex-wrap gap-1 justify-end">
@@ -349,6 +353,18 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
               </div>
             )}
           </div>
+          {treeResult?.splitAmounts && (
+            <div className="mb-4 border border-gray-200 rounded-lg overflow-hidden">
+              <table className="w-full text-xs">
+                <thead><tr className="bg-gray-100"><th className="text-left px-3 py-2 font-semibold text-gray-600">Product</th><th className="text-right px-3 py-2 font-semibold text-gray-600">Allocation</th></tr></thead>
+                <tbody>
+                  <tr><td className="px-3 py-2 border-t border-gray-100">{getProductLabel(treeResult.productKey)}</td><td className="px-3 py-2 border-t border-gray-100 text-right font-medium">{formatCurrency(treeResult.splitAmounts.primary)}</td></tr>
+                  <tr><td className="px-3 py-2 border-t border-gray-100">{getProductLabel(treeResult.secondaryProductKey)}</td><td className="px-3 py-2 border-t border-gray-100 text-right font-medium">{formatCurrency(treeResult.splitAmounts.secondary)}</td></tr>
+                  <tr className="bg-gray-50 font-bold"><td className="px-3 py-2 border-t border-gray-200">Total</td><td className="px-3 py-2 border-t border-gray-200 text-right">{formatCurrency((treeResult.splitAmounts.primary||0)+(treeResult.splitAmounts.secondary||0))}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          )}
           <DocText text={content.recommendation} />
           <PathTrail path={treeResult?.path} />
         </DocSection>
@@ -357,9 +373,19 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
         <DocSection number="6" title="Provider Rationale">
           <DocText text={content.providerRationale} />
           <div className="mt-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Due Diligence Scoring — Top 3 Providers</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Due Diligence Scoring — {getProductLabel(providerResult?.productKey || treeResult?.productKey)} — Top 3 Providers
+            </p>
             <ProviderTable providerResult={providerResult} />
           </div>
+          {providerResult2?.allRanked?.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Due Diligence Scoring — {getProductLabel(treeResult?.secondaryProductKey)} — Top 3 Providers
+              </p>
+              <ProviderTable providerResult={providerResult2} />
+            </div>
+          )}
           {providerResult?.recommended?.catalogue && (
             <div className="mt-4 bg-gray-50 rounded-lg px-4 py-3">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Recommended Product Details</p>

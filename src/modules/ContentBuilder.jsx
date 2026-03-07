@@ -288,7 +288,7 @@ function SectionItem({ section, isOpen, onToggle, text, onChange, productKey, cl
   );
 }
 
-export default function ContentBuilder({ productKey='unit trust', clientProfile={}, providerResult=null, initialContent={}, onChange, onComplete }) {
+export default function ContentBuilder({ productKey='unit trust', clientProfile={}, treeResult={}, providerResult=null, providerResult2=null, initialContent={}, onChange, onComplete }) {
   const [content, setContent]         = useState(initialContent);
   const [openSection, setOpenSection] = useState('clientNeeds');
   const [autoFilled, setAutoFilled]   = useState(false);
@@ -309,10 +309,20 @@ export default function ContentBuilder({ productKey='unit trust', clientProfile=
     ];
     if (alt1) lines.push(``, `Alternative considered: ${alt1.name} (score: ${formatScore(alt1.score)}). ${alt1.catalogue?.notes || ''}`);
     if (alt2) lines.push(``, `Alternative considered: ${alt2.name} (score: ${formatScore(alt2.score)}). ${alt2.catalogue?.notes || ''}`);
-    lines.push(``, `The recommended provider was selected based on the combination of overall due diligence score, suitability for the client's specific needs, and value for money. The top 3 providers and their full scoring breakdowns are retained on file for FAIS audit purposes.`);
+    if (providerResult2?.recommended) {
+      const rec2  = providerResult2.recommended;
+      const alt2a = providerResult2.alternatives?.[0];
+      const pKey2 = treeResult?.secondaryProductKey;
+      lines.push(
+        ``,
+        `A split investment strategy was recommended. The ${getProductLabel(pKey2)} allocation was placed with ${rec2.name} (score: ${formatScore(rec2.score)} out of 5.00). ${rec2.catalogue?.notes || ''}`,
+      );
+      if (alt2a) lines.push(``, `Alternative considered for ${getProductLabel(pKey2)}: ${alt2a.name} (score: ${formatScore(alt2a.score)}).`);
+    }
+    lines.push(``, `The recommended provider(s) were selected based on the combination of overall due diligence score, suitability for the client's specific needs, and value for money. The top 3 providers and their full scoring breakdowns are retained on file for FAIS audit purposes.`);
     setSection('providerRationale', lines.join('\n'));
     setAutoFilled(true);
-  }, [providerResult, productKey, setSection]);
+  }, [providerResult, providerResult2, treeResult, productKey, setSection]);
 
   const requiredSections  = SECTIONS.filter(s => s.required);
   const completedRequired = requiredSections.filter(s => content[s.key]?.trim().length > 20);
