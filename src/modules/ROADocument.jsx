@@ -423,6 +423,57 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
           </DocSection>
         )}
 
+        {/* ── FNA (education variant) ── */}
+        {retirementCalc?.results && retirementCalc.calcType === 'education' && (
+          <DocSection number="FNA" title={`Financial Needs Analysis — Education Savings${retirementCalc.childName ? `: ${retirementCalc.childName}` : ''}`}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              {[
+                { label: 'Education Corpus (PV)',         value: formatCurrency(retirementCalc.results.educationPV),   colour: 'bg-gray-50 border-gray-200' },
+                { label: retirementCalc.results.shortfall > 0 ? 'Shortfall' : 'Surplus', value: formatCurrency(retirementCalc.results.shortfall || retirementCalc.results.surplus), colour: retirementCalc.results.shortfall > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200' },
+                { label: 'Provisions (PV)',               value: formatCurrency(retirementCalc.results.provisionsPV),  colour: 'bg-blue-50 border-blue-200' },
+                { label: 'Monthly Contribution Required', value: retirementCalc.results.requiredMonthly > 0 ? formatCurrency(retirementCalc.results.requiredMonthly) : '—', colour: 'bg-amber-50 border-amber-200' },
+              ].map(card => (
+                <div key={card.label} className={`border rounded-lg px-3 py-2 ${card.colour}`}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{card.label}</p>
+                  <p className="text-sm font-bold text-gray-900">{card.value}</p>
+                </div>
+              ))}
+            </div>
+            {retirementCalc.phases?.filter(p => p.enabled).length > 0 && (
+              <table className="w-full text-xs border-collapse mb-3">
+                <thead><tr className="bg-gray-100">
+                  <th className="text-left px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Phase</th>
+                  <th className="text-center px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Age at Start</th>
+                  <th className="text-center px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Term</th>
+                  <th className="text-right px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Annual Cost (today)</th>
+                </tr></thead>
+                <tbody>
+                  {retirementCalc.phases.filter(p => p.enabled).map((p, i) => (
+                    <tr key={i} className={i % 2 === 0 ? 'bg-gray-50' : ''}>
+                      <td className="px-3 py-1.5 border border-gray-200 font-medium">{p.label}</td>
+                      <td className="px-3 py-1.5 border border-gray-200 text-center">{p.ageAtStart}</td>
+                      <td className="px-3 py-1.5 border border-gray-200 text-center">{p.term} yrs</td>
+                      <td className="px-3 py-1.5 border border-gray-200 text-right">{formatCurrency(p.annualCost)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <table className="w-full text-xs border-collapse mb-3">
+              <tbody>
+                {retirementCalc.childName && <tr className="bg-gray-50"><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600 w-48">Child's Name</td><td className="px-3 py-1.5 border border-gray-200">{retirementCalc.childName}</td></tr>}
+                <tr><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Current Age</td><td className="px-3 py-1.5 border border-gray-200">{retirementCalc.currentAge} years</td></tr>
+                <tr className="bg-gray-50"><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Coverage</td><td className="px-3 py-1.5 border border-gray-200">{retirementCalc.results.coveragePct.toFixed(1)}%</td></tr>
+                {retirementCalc.results.shortfall > 0 && <>
+                  <tr><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Lump Sum Required</td><td className="px-3 py-1.5 border border-gray-200">{formatCurrency(retirementCalc.results.requiredLumpSum)}</td></tr>
+                  <tr className="bg-gray-50"><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Monthly Contribution</td><td className="px-3 py-1.5 border border-gray-200">{formatCurrency(retirementCalc.results.requiredMonthly)}/month escalating at {retirementCalc.escalationRate}% p.a.</td></tr>
+                </>}
+                <tr><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Assumptions</td><td className="px-3 py-1.5 border border-gray-200">Education escalation {retirementCalc.escalationRate}% · Investment growth {retirementCalc.growthRate}%</td></tr>
+              </tbody>
+            </table>
+          </DocSection>
+        )}
+
         {/* ── 3. CLIENT NEEDS ── */}
         <DocSection number="3" title="Client Needs & Objectives">
           <DocText text={content.clientNeeds} />
