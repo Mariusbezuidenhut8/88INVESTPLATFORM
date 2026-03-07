@@ -337,23 +337,64 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
 
         {/* ── 5. PRODUCT RECOMMENDATION ── */}
         <DocSection number="5" title="Product Recommendation">
-          <div className="bg-gray-50 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recommended Product</p>
-              <p className="text-lg font-bold text-gray-900 mt-0.5">{getProductLabel(providerResult?.productKey || treeResult?.productKey)}</p>
-              {treeResult?.secondaryProductKey && (
-                <p className="text-sm font-semibold text-gray-700 mt-0.5">+ {getProductLabel(treeResult.secondaryProductKey)}</p>
+          {treeResult?.allocationPlan?.length > 0 ? (
+            <>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4">
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-0.5">Comprehensive Portfolio Allocation</p>
+                <p className="text-sm text-blue-800 leading-relaxed">{treeResult.rationale}</p>
+              </div>
+              <table className="w-full text-xs border-collapse mb-4">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">#</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Product</th>
+                    <th className="text-left px-3 py-2 font-semibold text-gray-600 border border-gray-200">Rationale</th>
+                    <th className="text-right px-3 py-2 font-semibold text-gray-600 border border-gray-200">Amount</th>
+                    {clientProfile.investmentAmount && <th className="text-right px-3 py-2 font-semibold text-gray-600 border border-gray-200">%</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {treeResult.allocationPlan.map((a, i) => {
+                    const pct = clientProfile.investmentAmount
+                      ? ((a.amount / clientProfile.investmentAmount) * 100).toFixed(1)
+                      : null;
+                    return (
+                      <tr key={i}>
+                        <td className="px-3 py-2 border border-gray-200 text-center font-bold text-gray-500">{i + 1}</td>
+                        <td className="px-3 py-2 border border-gray-200 font-semibold text-gray-800">{a.productLabel}</td>
+                        <td className="px-3 py-2 border border-gray-200 text-gray-600">{a.reason}</td>
+                        <td className="px-3 py-2 border border-gray-200 text-right font-bold">{formatCurrency(a.amount)}</td>
+                        {pct && <td className="px-3 py-2 border border-gray-200 text-right">{pct}%</td>}
+                      </tr>
+                    );
+                  })}
+                  <tr className="bg-gray-50 font-bold">
+                    <td colSpan={3} className="px-3 py-2 border border-gray-200">Total</td>
+                    <td className="px-3 py-2 border border-gray-200 text-right">{formatCurrency(treeResult.allocationPlan.reduce((s, a) => s + (a.amount || 0), 0))}</td>
+                    {clientProfile.investmentAmount && <td className="px-3 py-2 border border-gray-200 text-right">100%</td>}
+                  </tr>
+                </tbody>
+              </table>
+            </>
+          ) : (
+            <div className="bg-gray-50 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recommended Product</p>
+                <p className="text-lg font-bold text-gray-900 mt-0.5">{getProductLabel(providerResult?.productKey || treeResult?.productKey)}</p>
+                {treeResult?.secondaryProductKey && (
+                  <p className="text-sm font-semibold text-gray-700 mt-0.5">+ {getProductLabel(treeResult.secondaryProductKey)}</p>
+                )}
+              </div>
+              {treeResult?.flags?.length > 0 && (
+                <div className="flex flex-wrap gap-1 justify-end">
+                  {treeResult.flags.map(f => (
+                    <span key={f} className="text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">{f}</span>
+                  ))}
+                </div>
               )}
             </div>
-            {treeResult?.flags?.length > 0 && (
-              <div className="flex flex-wrap gap-1 justify-end">
-                {treeResult.flags.map(f => (
-                  <span key={f} className="text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">{f}</span>
-                ))}
-              </div>
-            )}
-          </div>
-          {treeResult?.splitAmounts && (
+          )}
+          {treeResult?.splitAmounts && !treeResult?.allocationPlan && (
             <div className="mb-4 border border-gray-200 rounded-lg overflow-hidden">
               <table className="w-full text-xs">
                 <thead><tr className="bg-gray-100"><th className="text-left px-3 py-2 font-semibold text-gray-600">Product</th><th className="text-right px-3 py-2 font-semibold text-gray-600">Allocation</th></tr></thead>

@@ -16,7 +16,7 @@
  * via onRecommendation so the ROA builder can proceed to provider scoring.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { DECISION_TREE, getPathSummary, isWithinScoringModel } from '../data/productTree.js';
 import { getProductLabel, getProductShort, formatCurrency } from '../shared/ui.js';
 import { LIMITS } from '../data/productReference.js';
@@ -160,6 +160,190 @@ function FlagPills({ flags }) {
           {FLAG_LABELS[f] || f}
         </span>
       ))}
+    </div>
+  );
+}
+
+// ─── Allocation Plan Card ──────────────────────────────────────────────────
+function AllocationCard({ node, path, onAccept, onReset, investmentAmount = 0 }) {
+  const total = Number(investmentAmount) || 0;
+
+  // Compute default amounts from allocation definitions
+  const defaultAmounts = useMemo(() => {
+    const amounts = {};
+    let allocated = 0;
+    // First pass: fixed amounts
+    node.allocations.forEach(a => {
+      if (a.amountType === 'fixed') {
+        const amt = total > 0 ? Math.min(a.defaultAmount, total) : a.defaultAmount;
+        amounts[a.productKey + a.amountType] = amt;
+        allocated += amt;
+      }
+    });
+    // Second pass: pct_remainder
+    const remainder1 = Math.max(0, total - allocated);
+    node.allocations.forEach(a => {
+      if (a.amountType === 'pct_remainder') {
+        const amt = total > 0 ? Math.round((remainder1 * (a.defaultPct / 100)) / 1000) * 1000 : 0;
+        amounts[a.productKey + a.amountType] = amt;
+        allocated += amt;
+      }
+    });
+    // Third pass: remainder
+    node.allocations.forEach(a => {
+      if (a.amountType === 'remainder') {
+        amounts[a.productKey + a.amountType] = Math.max(0, total - allocated);
+      }
+    });
+    return amounts;
+  }, [node.allocations, total]);
+
+  const [amounts, setAmounts] = useState(defaultAmounts);
+
+  const getKey = (a) => a.productKey + a.amountType;
+
+  const setAmount = (a, val) => {
+    const newVal = Number(val) || 0;
+    const key = getKey(a);
+    setAmounts(prev => {
+      const next = { ...prev, [key]: newVal };
+      // If there's a 'remainder' allocation, auto-adjust it
+      const remainderAlloc = node.allocations.find(x => x.amountType === 'remainder');
+      if (remainderAlloc && getKey(remainderAlloc) !== key) {
+        const otherTotal = node.allocations
+          .filter(x => x.amountType !== 'remainder')
+          .reduce((s, x) => s + (next[getKey(x)] || 0), 0);
+        next[getKey(remainderAlloc)] = Math.max(0, total - otherTotal);
+      }
+      return next;
+    });
+  };
+
+  const allocatedTotal = node.allocations.reduce((s, a) => s + (amounts[getKey(a)] || 0), 0);
+  const balanceOk = total === 0 || Math.abs(allocatedTotal - total) < 1;
+
+  const handleConfirm = () => {
+    const resolvedAllocations = node.allocations.map(a => ({
+      productKey: a.productKey,
+      productLabel: a.productLabel,
+      amount: amounts[getKey(a)] || 0,
+      reason: a.reason,
+      scoreable: isWithinScoringModel(a.productKey),
+    })).filter(a => a.amount > 0);
+
+    onAccept({ type: 'allocation_plan', allocations: resolvedAllocations, rationale: node.rationale, flags: node.flags || [] }, path);
+  };
+
+  return (
+    <div className="rounded-xl border-2 border-blue-300 bg-blue-50 p-6">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">Recommended Portfolio Allocation</p>
+          <h2 className="text-xl font-bold text-blue-800">Comprehensive Investment Plan</h2>
+        </div>
+        <span className="text-xs font-semibold bg-blue-600 text-white px-2 py-1 rounded-full flex-shrink-0">Multi-product</span>
+      </div>
+
+      {/* Rationale */}
+      <div className="bg-white bg-opacity-70 rounded-lg px-4 py-3 mb-5">
+        <p className="text-sm text-gray-700 leading-relaxed">{node.rationale}</p>
+      </div>
+
+      {/* Allocation table */}
+      <div className="bg-white rounded-xl border border-blue-200 overflow-hidden mb-4">
+        <div className="px-4 py-2.5 bg-blue-100 border-b border-blue-200 flex items-center justify-between">
+          <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Allocation Plan</p>
+          {total > 0 && (
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${balanceOk ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+              {balanceOk ? `${formatCurrency(total)} fully allocated` : `Unallocated: ${formatCurrency(Math.abs(total - allocatedTotal))}`}
+            </span>
+          )}
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500">#</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500">Product</th>
+              <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {node.allocations.map((a, i) => {
+              const key = getKey(a);
+              const amt = amounts[key] || 0;
+              const pct = total > 0 ? ((amt / total) * 100).toFixed(1) : null;
+              const col = getColour(a.productKey);
+              return (
+                <tr key={key} className="border-b border-gray-50 last:border-0">
+                  <td className="px-4 py-3 text-xs font-bold text-gray-400">{i + 1}</td>
+                  <td className="px-4 py-3">
+                    <p className={`text-sm font-semibold ${col.text}`}>{a.productLabel}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 leading-snug">{a.reason}</p>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex flex-col items-end gap-1">
+                      {a.amountType !== 'remainder' ? (
+                        <div className="relative w-36">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">R</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1000"
+                            value={amt}
+                            onChange={e => setAmount(a, e.target.value)}
+                            className="w-full text-sm border border-gray-200 rounded-lg pl-6 pr-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-700">{formatCurrency(amt)}</p>
+                      )}
+                      {pct && <span className="text-xs text-gray-400">{pct}%</span>}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          {total > 0 && (
+            <tfoot>
+              <tr className="bg-gray-50 border-t-2 border-gray-200">
+                <td colSpan={2} className="px-4 py-2.5 text-sm font-bold text-gray-700">Total</td>
+                <td className="px-4 py-2.5 text-right text-sm font-bold text-gray-700">{formatCurrency(allocatedTotal)}</td>
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+
+      {/* Path summary */}
+      <div className="pt-4 border-t border-blue-200">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Decision Path</p>
+        <div className="flex flex-wrap gap-1">
+          {path.map((p, i) => (
+            <span key={i} className="flex items-center gap-1 text-xs text-gray-500">
+              <span className="bg-white border border-gray-200 rounded px-1.5 py-0.5">{p.answer}</span>
+              {i < path.length - 1 && <span className="text-gray-300">›</span>}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div className="flex gap-3 mt-6">
+        <button
+          onClick={handleConfirm}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-lg transition-colors text-sm"
+        >
+          Accept Allocation Plan →
+        </button>
+        <button
+          onClick={onReset}
+          className="px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          Start Over
+        </button>
+      </div>
     </div>
   );
 }
@@ -421,23 +605,51 @@ export default function DecisionTree({ onRecommendation, onReset: externalReset,
   }, [externalReset]);
 
   // ── Accept recommendation ──
-  const handleAccept = useCallback((rec, path, splitConfig) => {
-    if (onRecommendation) {
+  const handleAccept = useCallback((recOrPlan, path, splitConfig) => {
+    if (!onRecommendation) return;
+
+    // Allocation plan path
+    if (recOrPlan?.type === 'allocation_plan') {
+      const allocations = recOrPlan.allocations;
+      // Primary = largest scoreable allocation; fallback to largest overall
+      const scoreable = allocations.filter(a => a.scoreable);
+      const sorted = [...allocations].sort((a, b) => b.amount - a.amount);
+      const primary = scoreable.length ? scoreable.sort((a, b) => b.amount - a.amount)[0] : sorted[0];
+      const secondary = scoreable.filter(a => a !== primary)[0];
       onRecommendation({
-        productKey:   rec.productKey,
-        productLabel: getProductLabel(rec.productKey),
-        rationale:    rec.rationale,
-        flags:        rec.flags || [],
-        path:         path,
-        scoreable:    isWithinScoringModel(rec.productKey),
-        ...(splitConfig && {
-          secondaryProductKey:   splitConfig.secondaryProductKey,
-          secondaryProductLabel: getProductLabel(splitConfig.secondaryProductKey),
-          secondaryScoreable:    isWithinScoringModel(splitConfig.secondaryProductKey),
-          splitAmounts:          splitConfig.splitAmounts,
+        productKey:   primary.productKey,
+        productLabel: primary.productLabel,
+        rationale:    recOrPlan.rationale,
+        flags:        recOrPlan.flags || [],
+        path,
+        scoreable:    primary.scoreable,
+        allocationPlan: allocations,
+        ...(secondary && {
+          secondaryProductKey:   secondary.productKey,
+          secondaryProductLabel: secondary.productLabel,
+          secondaryScoreable:    secondary.scoreable,
+          splitAmounts:          { primary: primary.amount, secondary: secondary.amount },
         }),
       });
+      return;
     }
+
+    // Single / split product path
+    const rec = recOrPlan;
+    onRecommendation({
+      productKey:   rec.productKey,
+      productLabel: getProductLabel(rec.productKey),
+      rationale:    rec.rationale,
+      flags:        rec.flags || [],
+      path,
+      scoreable:    isWithinScoringModel(rec.productKey),
+      ...(splitConfig && {
+        secondaryProductKey:   splitConfig.secondaryProductKey,
+        secondaryProductLabel: getProductLabel(splitConfig.secondaryProductKey),
+        secondaryScoreable:    isWithinScoringModel(splitConfig.secondaryProductKey),
+        splitAmounts:          splitConfig.splitAmounts,
+      }),
+    });
   }, [onRecommendation]);
 
   if (!currentNode) {
@@ -466,6 +678,17 @@ export default function DecisionTree({ onRecommendation, onReset: externalReset,
         {/* ── RECOMMENDATION node ── */}
         {currentNode.type === 'recommendation' && (
           <RecommendationCard
+            node={currentNode}
+            path={history}
+            onAccept={handleAccept}
+            onReset={handleReset}
+            investmentAmount={investmentAmount}
+          />
+        )}
+
+        {/* ── ALLOCATION PLAN node ── */}
+        {currentNode.type === 'allocation' && (
+          <AllocationCard
             node={currentNode}
             path={history}
             onAccept={handleAccept}

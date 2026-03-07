@@ -37,6 +37,7 @@ export const DECISION_TREE = {
     options: [
       { label: 'Capital Growth / Wealth Accumulation', value: 'growth', next: 'growth_horizon' },
       { label: 'Income / Retirement Income', value: 'income', next: 'income_source' },
+      { label: 'Comprehensive Portfolio Allocation — optimise a lump sum across multiple tax-efficient vehicles', value: 'lump_alloc', next: 'lump_alloc_tfsa' },
     ],
   },
 
@@ -381,6 +382,213 @@ export const DECISION_TREE = {
       outsideNote: 'The Guaranteed Life Annuity component requires quotes from multiple life insurers (outside platform scoring model). The Living Annuity component is scored via the provider matrix.',
       flags: ['blended_annuity', 'guaranteed_floor', 'living_annuity_flexibility', 'longevity_risk_managed'],
     },
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // COMPREHENSIVE LUMP SUM ALLOCATION PATH
+  // Guides the advisor through TFSA → Liquidity → Tax Rate to build
+  // a multi-product allocation plan for a large lump sum investment.
+  // ═══════════════════════════════════════════════════════════════════
+
+  lump_alloc_tfsa: {
+    id: 'lump_alloc_tfsa',
+    type: 'question',
+    step: 2,
+    stepLabel: 'TFSA Status',
+    question: 'Has the client maximised their Tax-Free Savings Account (TFSA) annual contribution for the current tax year?',
+    context: 'The TFSA annual limit is R46 000 (2026). TFSA should almost always be the first allocation for discretionary savings — all growth, dividends and withdrawals are tax-free. If the client still has capacity, this is priority #1 regardless of investment amount.',
+    options: [
+      { label: 'No — client still has TFSA capacity this tax year', value: 'tfsa_available', next: 'lump_alloc_liquidity' },
+      { label: 'Yes — TFSA annual limit already fully contributed this year', value: 'tfsa_maxed', next: 'lump_alloc_liquidity_no_tfsa' },
+      { label: 'Yes — TFSA lifetime limit (R500 000) reached', value: 'tfsa_lifetime', next: 'lump_alloc_liquidity_no_tfsa' },
+    ],
+  },
+
+  lump_alloc_liquidity: {
+    id: 'lump_alloc_liquidity',
+    type: 'question',
+    step: 3,
+    stepLabel: 'Liquidity Needs',
+    question: 'What portion of the investment must remain accessible within the next 5 years?',
+    context: 'Liquidity requirements determine whether a portion should be kept in a fully liquid vehicle (unit trust / discretionary platform). An endowment has a 5-year restriction period — any capital allocated there must not be needed for at least 5 years.',
+    options: [
+      { label: 'No specific liquidity requirement — client can commit full amount long-term', value: 'none', next: 'lump_alloc_tax_rate' },
+      { label: 'Some liquidity needed — up to ~20–30% may be required within 5 years', value: 'some', next: 'lump_alloc_tax_rate' },
+      { label: 'Significant liquidity — 40% or more needed within 5 years', value: 'high', next: 'alloc_high_liq_tfsa' },
+    ],
+  },
+
+  lump_alloc_liquidity_no_tfsa: {
+    id: 'lump_alloc_liquidity_no_tfsa',
+    type: 'question',
+    step: 3,
+    stepLabel: 'Liquidity Needs',
+    question: 'What portion of the investment must remain accessible within the next 5 years?',
+    context: 'Since the TFSA is already maximised for this year, we focus the remaining capital. Liquidity requirements determine the split between an endowment (restricted for 5 years) and a unit trust (fully liquid).',
+    options: [
+      { label: 'No specific liquidity requirement — client can commit full amount long-term', value: 'none', next: 'lump_alloc_tax_rate_no_tfsa' },
+      { label: 'Some liquidity needed — up to ~20–30% may be required within 5 years', value: 'some', next: 'lump_alloc_tax_rate_no_tfsa' },
+      { label: 'Significant liquidity — 40% or more needed within 5 years', value: 'high', next: 'alloc_high_liq_no_tfsa' },
+    ],
+  },
+
+  lump_alloc_tax_rate: {
+    id: 'lump_alloc_tax_rate',
+    type: 'question',
+    step: 4,
+    stepLabel: 'Marginal Tax Rate',
+    question: 'What is the client\'s marginal income tax rate?',
+    context: 'An Endowment Policy is tax-efficient for clients with a marginal tax rate above 30% — the policy\'s internal tax rate is capped at 30%, providing tax arbitrage on income and dividends. CGT within the endowment is taxed at an effective 12% (vs the client\'s higher rate). For clients at 30% or below, a unit trust is generally more efficient.',
+    options: [
+      { label: 'High — 41% or 45% marginal rate (taxable income above R353 100)', value: 'high', next: 'alloc_high_tax_tfsa' },
+      { label: 'Lower — 30% or below (or uncertain / variable income)', value: 'low', next: 'alloc_low_tax_tfsa' },
+    ],
+  },
+
+  lump_alloc_tax_rate_no_tfsa: {
+    id: 'lump_alloc_tax_rate_no_tfsa',
+    type: 'question',
+    step: 4,
+    stepLabel: 'Marginal Tax Rate',
+    question: 'What is the client\'s marginal income tax rate?',
+    context: 'An Endowment Policy is tax-efficient for clients with a marginal tax rate above 30% — the policy\'s internal tax rate is capped at 30%, providing tax arbitrage on income and dividends. CGT within the endowment is taxed at an effective 12% (vs the client\'s higher rate).',
+    options: [
+      { label: 'High — 41% or 45% marginal rate (taxable income above R353 100)', value: 'high', next: 'alloc_high_tax_no_tfsa' },
+      { label: 'Lower — 30% or below (or uncertain / variable income)', value: 'low', next: 'alloc_low_tax_no_tfsa' },
+    ],
+  },
+
+  // ── Allocation terminal nodes ──────────────────────────────────────
+
+  // High tax + TFSA available: TFSA + Endowment (majority) + UT (buffer)
+  alloc_high_tax_tfsa: {
+    id: 'alloc_high_tax_tfsa',
+    type: 'allocation',
+    rationale: 'The client has a high marginal tax rate and still has TFSA capacity. The recommended allocation maximises tax efficiency: TFSA is funded first (tax-free compounding), the majority of remaining capital is placed in an Endowment (capped at 30% internal tax rate vs the client\'s 41%/45%, and effective CGT of 12%), and a discretionary unit trust provides a fully liquid buffer. This structure reduces the tax drag on the overall portfolio and provides estate planning benefits via the endowment\'s beneficiary nomination facility.',
+    flags: ['comprehensive_allocation', 'high_tax_bracket', 'tfsa_included', 'endowment_tax_arbitrage'],
+    allocations: [
+      {
+        productKey: 'Tax-Free savings',
+        productLabel: 'Tax-Free Savings Account (TFSA)',
+        amountType: 'fixed',
+        defaultAmount: 46000,
+        reason: 'First priority: annual TFSA limit (R46 000 — 2026). All growth, dividends and withdrawals are completely tax-free. Invest in a high-growth equity fund to maximise the tax-free compounding benefit.',
+      },
+      {
+        productKey: 'ENDOWMENT',
+        productLabel: 'Endowment Policy',
+        amountType: 'pct_remainder',
+        defaultPct: 65,
+        reason: 'Majority of remaining capital in an Endowment. Tax arbitrage: internal rate capped at 30% (vs 41%/45% marginal rate). CGT effective rate: 12%. Beneficiary nomination avoids executor fees. Accept the 5-year restriction period in exchange for long-term tax savings.',
+      },
+      {
+        productKey: 'unit trust',
+        productLabel: 'Unit Trust (Discretionary — Liquidity Buffer)',
+        amountType: 'remainder',
+        reason: 'Remaining capital in a fully liquid discretionary unit trust. No lock-up period — available for unexpected needs, opportunities, or annual TFSA top-ups. CGT annual exclusion of R50 000 applies.',
+      },
+    ],
+  },
+
+  // High tax + TFSA maxed: Endowment (majority) + UT (buffer)
+  alloc_high_tax_no_tfsa: {
+    id: 'alloc_high_tax_no_tfsa',
+    type: 'allocation',
+    rationale: 'The client\'s TFSA is fully utilised for this tax year. With a high marginal tax rate, the majority of the lump sum is best placed in an Endowment Policy for tax efficiency — the policy\'s internal tax is capped at 30% (vs 41%/45% marginal rate), with effective CGT of 12%. A discretionary unit trust is maintained as a liquid buffer. Next tax year, consider contributing the annual TFSA limit (R46 000) to use remaining lifetime capacity.',
+    flags: ['comprehensive_allocation', 'high_tax_bracket', 'tfsa_maxed', 'endowment_tax_arbitrage'],
+    allocations: [
+      {
+        productKey: 'ENDOWMENT',
+        productLabel: 'Endowment Policy',
+        amountType: 'pct_remainder',
+        defaultPct: 70,
+        reason: 'Primary vehicle: Endowment with capped tax rate (30%). Tax arbitrage is significant for 41%/45% taxpayers. CGT effective 12%. Beneficiary nomination for estate efficiency. Minimum 5-year commitment required.',
+      },
+      {
+        productKey: 'unit trust',
+        productLabel: 'Unit Trust (Discretionary — Liquidity Buffer)',
+        amountType: 'remainder',
+        reason: 'Remaining capital in a fully liquid discretionary unit trust. Provides access for upcoming TFSA annual contributions, emergency needs, and investment opportunities. CGT annual exclusion R50 000.',
+      },
+    ],
+  },
+
+  // Low tax + TFSA available: TFSA + Unit Trust
+  alloc_low_tax_tfsa: {
+    id: 'alloc_low_tax_tfsa',
+    type: 'allocation',
+    rationale: 'With a lower marginal tax rate (at or below 30%), the tax advantage of an Endowment is negligible or non-existent — the client\'s personal tax rate is comparable to the Endowment\'s internal rate, and the 5-year lock-up does not provide sufficient benefit. The recommended allocation maximises the tax-free TFSA first, with the remainder in a fully liquid, low-cost unit trust. The client retains full flexibility and pays tax at their (already low) marginal rate.',
+    flags: ['comprehensive_allocation', 'lower_tax_bracket', 'tfsa_included', 'full_liquidity'],
+    allocations: [
+      {
+        productKey: 'Tax-Free savings',
+        productLabel: 'Tax-Free Savings Account (TFSA)',
+        amountType: 'fixed',
+        defaultAmount: 46000,
+        reason: 'First priority: annual TFSA limit (R46 000 — 2026). Even at lower tax rates, tax-free compounding over the long term is highly valuable. Allocate to a growth-oriented equity fund.',
+      },
+      {
+        productKey: 'unit trust',
+        productLabel: 'Unit Trust / Discretionary Investment',
+        amountType: 'remainder',
+        reason: 'Remaining capital in a flexible unit trust. At lower tax rates, the Endowment\'s tax benefit does not justify the 5-year restriction. Full liquidity retained. CGT annual exclusion R50 000 applies.',
+      },
+    ],
+  },
+
+  // Low tax + TFSA maxed: Unit Trust only
+  alloc_low_tax_no_tfsa: {
+    id: 'alloc_low_tax_no_tfsa',
+    type: 'allocation',
+    rationale: 'With the TFSA fully utilised and a lower marginal tax rate, a discretionary unit trust is the most appropriate vehicle. The tax advantage of an Endowment is not material at this tax bracket, and the 5-year restriction is not warranted. Consider contributing the annual TFSA limit (R46 000) again next tax year to continue building tax-free savings.',
+    flags: ['comprehensive_allocation', 'lower_tax_bracket', 'tfsa_maxed', 'full_liquidity'],
+    allocations: [
+      {
+        productKey: 'unit trust',
+        productLabel: 'Unit Trust / Discretionary Investment',
+        amountType: 'remainder',
+        reason: 'Full lump sum in a flexible unit trust. Tax-efficient at lower marginal rates. Full daily liquidity. CGT annual exclusion R50 000 applies. Wide fund selection and asset manager choice.',
+      },
+    ],
+  },
+
+  // High liquidity + TFSA available
+  alloc_high_liq_tfsa: {
+    id: 'alloc_high_liq_tfsa',
+    type: 'allocation',
+    rationale: 'Significant liquidity is required within 5 years — this precludes a large Endowment allocation (5-year restriction period). The TFSA is funded first for tax-free long-term compounding. The bulk of the capital is held in a liquid discretionary unit trust. A smaller endowment allocation is possible only if a defined portion can be committed for 5+ years.',
+    flags: ['comprehensive_allocation', 'liquidity_priority', 'tfsa_included'],
+    allocations: [
+      {
+        productKey: 'Tax-Free savings',
+        productLabel: 'Tax-Free Savings Account (TFSA)',
+        amountType: 'fixed',
+        defaultAmount: 46000,
+        reason: 'First priority: annual TFSA limit (R46 000). Tax-free compounding. Even with liquidity needs, the TFSA can be withdrawn at any time — it is always appropriate to fund this first.',
+      },
+      {
+        productKey: 'unit trust',
+        productLabel: 'Unit Trust / Discretionary Investment',
+        amountType: 'remainder',
+        reason: 'Majority of capital in a fully liquid unit trust. Accessible within days. No lock-up. Suitable for capital that may be needed within 5 years. Consider a balanced or stable fund if the required date is within 3 years.',
+      },
+    ],
+  },
+
+  // High liquidity + TFSA maxed
+  alloc_high_liq_no_tfsa: {
+    id: 'alloc_high_liq_no_tfsa',
+    type: 'allocation',
+    rationale: 'Significant liquidity is required within 5 years and the TFSA is already maximised. A fully liquid discretionary unit trust is the only appropriate vehicle — the Endowment\'s 5-year restriction cannot be accommodated given the liquidity requirements. Next tax year, prioritise the annual TFSA contribution (R46 000) once liquidity needs are clarified.',
+    flags: ['comprehensive_allocation', 'liquidity_priority', 'tfsa_maxed'],
+    allocations: [
+      {
+        productKey: 'unit trust',
+        productLabel: 'Unit Trust / Discretionary Investment',
+        amountType: 'remainder',
+        reason: 'Full lump sum in a fully liquid discretionary unit trust. No lock-up. Accessible when needed. Given liquidity requirements, this is the only appropriate vehicle. Revisit allocation structure once liquidity needs are met.',
+      },
+    ],
   },
 
   // Step 2.3 — Voluntary (discretionary) Life Annuity
