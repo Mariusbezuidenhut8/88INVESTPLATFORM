@@ -474,6 +474,43 @@ export default function ROADocument({ roaData = {}, advisorProfile = {}, onEdit,
           </DocSection>
         )}
 
+        {/* ── FNA (tax calculator variant) ── */}
+        {retirementCalc?.results && retirementCalc.calcType === 'tax' && (
+          <DocSection number="FNA" title="Financial Needs Analysis — Income Tax & Wrapper Selection">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              {[
+                { label: 'Monthly Tax',      value: formatCurrency(retirementCalc.results.netMonthly),   colour: 'bg-gray-50 border-gray-200' },
+                { label: 'Annual Tax',        value: formatCurrency(retirementCalc.results.netAnnual),    colour: 'bg-gray-50 border-gray-200' },
+                { label: 'Average Tax Rate',  value: `${Number(retirementCalc.results.averageRate).toFixed(2)}%`, colour: 'bg-blue-50 border-blue-200' },
+                { label: 'Marginal Tax Rate', value: `${retirementCalc.results.marginalRate}%`, colour: retirementCalc.results.marginalRate > 30 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200' },
+              ].map(card => (
+                <div key={card.label} className={`border rounded-lg px-3 py-2 ${card.colour}`}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{card.label}</p>
+                  <p className="text-sm font-bold text-gray-900">{card.value}</p>
+                </div>
+              ))}
+            </div>
+            <table className="w-full text-xs border-collapse">
+              <tbody>
+                <tr className="bg-gray-50"><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600 w-48">Monthly Taxable Income</td><td className="px-3 py-1.5 border border-gray-200">{formatCurrency(retirementCalc.monthlyIncome)}</td></tr>
+                <tr><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Age</td><td className="px-3 py-1.5 border border-gray-200">{retirementCalc.age}</td></tr>
+                <tr className="bg-gray-50"><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Marginal Tax Rate</td><td className="px-3 py-1.5 border border-gray-200 font-bold">{retirementCalc.results.marginalRate}%</td></tr>
+                <tr><td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Endowment Tax Rate</td><td className="px-3 py-1.5 border border-gray-200">30% (flat rate)</td></tr>
+                <tr className="bg-gray-50">
+                  <td className="px-3 py-1.5 border border-gray-200 font-semibold text-gray-600">Wrapper Recommendation</td>
+                  <td className="px-3 py-1.5 border border-gray-200 font-semibold">
+                    {retirementCalc.results.marginalRate > 30
+                      ? `Endowment — marginal rate (${retirementCalc.results.marginalRate}%) exceeds endowment rate (30%). Endowment wrapper is more tax efficient.`
+                      : retirementCalc.results.marginalRate === 30
+                        ? 'Neutral — marginal rate equals endowment rate. Wrapper choice based on other factors.'
+                        : `Unit Trust — marginal rate (${retirementCalc.results.marginalRate}%) is below endowment rate (30%). Transparent wrapper preferred.`}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </DocSection>
+        )}
+
         {/* ── 3. CLIENT NEEDS ── */}
         <DocSection number="3" title="Client Needs & Objectives">
           <DocText text={content.clientNeeds} />

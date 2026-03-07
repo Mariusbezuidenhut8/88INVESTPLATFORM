@@ -19,6 +19,7 @@ import { useState } from 'react';
 import RetirementCalculator from './RetirementCalculator.jsx';
 import GoalCalculator       from './GoalCalculator.jsx';
 import EducationCalculator  from './EducationCalculator.jsx';
+import TaxCalculator        from './TaxCalculator.jsx';
 
 export default function NeedsAnalysis({ clientProfile, initialData = {}, onChange, onComplete, onSkip }) {
   const [calcType, setCalcType] = useState(initialData.calcType || null);
@@ -60,6 +61,19 @@ export default function NeedsAnalysis({ clientProfile, initialData = {}, onChang
     );
   }
 
+  // ── Tax Calculator ──
+  if (calcType === 'tax') {
+    return (
+      <TaxCalculator
+        clientProfile={clientProfile}
+        initialData={initialData.calcType === 'tax' ? initialData : {}}
+        onChange={data => onChange?.({ ...data, calcType: 'tax' })}
+        onComplete={data => onComplete?.({ ...data, calcType: 'tax' })}
+        onBack={() => setCalcType(null)}
+      />
+    );
+  }
+
   // ── Landing ──
   return (
     <div className="max-w-3xl mx-auto">
@@ -69,7 +83,7 @@ export default function NeedsAnalysis({ clientProfile, initialData = {}, onChang
         <p className="text-sm text-gray-500 mt-1">Select a calculator, or skip if this is a straightforward investment mandate with no planning required.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
 
         <button
           onClick={() => setCalcType('retirement')}
@@ -101,6 +115,17 @@ export default function NeedsAnalysis({ clientProfile, initialData = {}, onChang
           <p className="text-base font-bold text-gray-800 group-hover:text-blue-700">Savings Goal</p>
           <p className="text-xs text-gray-500 mt-2 leading-relaxed">
             Work towards a specific financial target — property, vehicle, or any once-off goal. Calculates the lump sum or monthly investment required.
+          </p>
+        </button>
+
+        <button
+          onClick={() => setCalcType('tax')}
+          className="bg-white border-2 border-gray-200 hover:border-blue-400 rounded-xl p-5 text-left transition-all hover:shadow-md group"
+        >
+          <div className="text-3xl mb-3">🧾</div>
+          <p className="text-base font-bold text-gray-800 group-hover:text-blue-700">Tax Calculator</p>
+          <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+            Calculate income tax, average rate, and — critically — the <strong className="text-gray-600">marginal tax rate</strong> to determine whether a Unit Trust or Endowment wrapper is more tax efficient.
           </p>
         </button>
 
