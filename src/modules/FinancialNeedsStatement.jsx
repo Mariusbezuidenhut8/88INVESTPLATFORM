@@ -7,7 +7,11 @@
  *   Modals    — per-type edit forms for Assets, Incomes, Expenses, Liabilities, Goals
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer,
+} from 'recharts';
 
 // ── Type lists ─────────────────────────────────────────────────────────────
 
@@ -777,15 +781,307 @@ function BudgetView({ clientProfile, data, onClose }) {
   );
 }
 
-// ── Stub views ─────────────────────────────────────────────────────────────
+// ── Portfolio projection ────────────────────────────────────────────────────
 
-function ModellingView() {
+function projectPortfolio(data, clientProfile, opts) {
+  const currentAge  = Number(clientProfile?.age) || 65;
+  const retireAge   = Number(opts.retireAge)      || currentAge;
+  const returnRate  = 0.07; // 7% real annual
+  const currentYear = new Date().getFullYear();
+
+  let portfolio  = data.assets.reduce((s, a) => s + (Number(a.value)  || 0), 0);
+  const goalsTotal = data.goals.reduce((s, g) => s + (Number(g.value) || 0), 0);
+
+  const baseMonthlyInc    = data.incomes.reduce((s, i)  => s + (Number(i.amount) || 0), 0);
+  const baseMonthlyExp    = data.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const monthlyInc        = baseMonthlyInc + (Number(opts.savingsBoost)      || 0);
+  const preMonthlyExp     = baseMonthlyExp - (Number(opts.preExpReduction)   || 0);
+  const postMonthlyExp    = baseMonthlyExp - (Number(opts.postExpReduction)  || 0);
+
+  const points = [];
+  const maxAge = 119;
+
+  for (let y = 0; y <= maxAge - currentAge; y++) {
+    const age      = currentAge + y;
+    const year     = currentYear + y;
+    const retired  = age >= retireAge;
+    const annualNet = (monthlyInc - (retired ? postMonthlyExp : preMonthlyExp)) * 12;
+
+    if (y % 5 === 0) {
+      const total = Math.max(0, Math.round(portfolio));
+      points.push({
+        year,
+        age,
+        xLabel: String(year),
+        total,
+        goals: opts.showGoals ? Math.max(0, Math.min(goalsTotal, total * 0.08)) : 0,
+        liquidity: opts.showLiquidity ? total : 0,
+      });
+    }
+
+    portfolio = Math.max(0, portfolio * (1 + returnRate) + annualNet);
+  }
+
+  return points;
+}
+
+// ── Modelling sidebar ───────────────────────────────────────────────────────
+
+const EXPLORE_TABS = [
+  { id: 'savings',  icon: '💹', tip: 'Increase Savings'   },
+  { id: 'spend',    icon: '📉', tip: 'Spend Less'         },
+  { id: 'retire',   icon: '⏰', tip: 'Work Longer'        },
+];
+
+function ModelSidebar({ opts, onChange, onBack, surplus }) {
+  const [tab, setTab] = useState('savings');
+  const s = k => v => onChange({ ...opts, [k]: v });
+
   return (
-    <div className="flex-1 flex items-center justify-center p-8">
-      <div className="text-center text-gray-400">
-        <p className="text-4xl mb-3">📈</p>
-        <p className="text-sm font-semibold">Modelling — Coming Soon</p>
-        <p className="text-xs mt-1">Cash-flow projections and scenario modelling.</p>
+    <aside className="w-52 flex-shrink-0 bg-gray-800 text-white flex flex-col rounded-l-xl overflow-hidden">
+      <button onClick={onBack}
+        className="flex items-center gap-2 px-4 py-3 text-xs text-gray-400 hover:text-white hover:bg-gray-700 transition-colors border-b border-gray-700">
+        ‹ Back to Client Dashboard
+      </button>
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-700">
+        <button onClick={onBack} className="text-gray-400 hover:text-white transition-colors text-xs">‹</button>
+        <span className="text-xs font-semibold text-white">Exploring Options</span>
+      </div>
+
+      {/* Icon tabs */}
+      <div className="flex border-b border-gray-700">
+        {EXPLORE_TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} title={t.tip}
+            className={`flex-1 py-2.5 text-base transition-colors
+              ${tab === t.id ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}>
+            {t.icon}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <div className="flex-1 p-4 space-y-4 text-sm overflow-y-auto">
+        {tab === 'savings' && (
+          <>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <input type="radio" name="savMode" defaultChecked className="accent-teal-400" />
+                Add to new Linked Investment
+              </label>
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <input type="radio" name="savMode" className="accent-teal-400" />
+                Let me customise
+              </label>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 mb-1">Increase savings by:</p>
+              <div className="flex items-center border border-gray-600 rounded overflow-hidden">
+                <span className="px-2 py-1.5 text-xs text-gray-400 border-r border-gray-600">R</span>
+                <input type="number" value={opts.savingsBoost || ''} onChange={e => s('savingsBoost')(e.target.value)}
+                  placeholder="0.00" className="flex-1 bg-transparent px-2 py-1.5 text-xs text-white focus:outline-none" />
+              </div>
+            </div>
+            {surplus !== null && (
+              <p className="text-xs text-gray-400">
+                You have a surplus of: <span className={surplus >= 0 ? 'text-teal-400' : 'text-red-400'}>
+                  R {Math.abs(surplus).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+                </span>
+              </p>
+            )}
+          </>
+        )}
+
+        {tab === 'spend' && (
+          <>
+            <p className="text-xs font-semibold text-white">Spend Less</p>
+            <p className="text-xs text-teal-400">Tip: Adjust pre- and post-retirement expense levels to see the effect on your portfolio.</p>
+            <div>
+              <p className="text-xs text-gray-300 font-semibold mb-2">Pre-retirement</p>
+              <p className="text-xs text-gray-400 mb-1">Reduce expenses by:</p>
+              <div className="flex items-center border border-gray-600 rounded overflow-hidden">
+                <span className="px-2 py-1.5 text-xs text-gray-400 border-r border-gray-600">R</span>
+                <input type="number" value={opts.preExpReduction || ''} onChange={e => s('preExpReduction')(e.target.value)}
+                  placeholder="0.00" className="flex-1 bg-transparent px-2 py-1.5 text-xs text-white focus:outline-none" />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-gray-300 font-semibold mb-2">Post-retirement</p>
+              <p className="text-xs text-gray-400 mb-1">Reduce expenses by:</p>
+              <div className="flex items-center border border-gray-600 rounded overflow-hidden">
+                <span className="px-2 py-1.5 text-xs text-gray-400 border-r border-gray-600">R</span>
+                <input type="number" value={opts.postExpReduction || ''} onChange={e => s('postExpReduction')(e.target.value)}
+                  placeholder="0.00" className="flex-1 bg-transparent px-2 py-1.5 text-xs text-white focus:outline-none" />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Your living expenses are: R{(
+                  Number(opts._baseMonthlyExp || 0)
+                ).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+          </>
+        )}
+
+        {tab === 'retire' && (
+          <>
+            <p className="text-xs font-semibold text-white">Work Longer</p>
+            <div>
+              <p className="text-xs text-gray-400 mb-1">Retire At:</p>
+              <div className="flex items-center border border-gray-600 rounded overflow-hidden">
+                <input type="number" value={opts.retireAge || 65} onChange={e => s('retireAge')(e.target.value)}
+                  min="50" max="85"
+                  className="flex-1 bg-transparent px-2 py-1.5 text-xs text-white focus:outline-none" />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="px-4 py-3 border-t border-gray-700 flex items-center gap-2 text-gray-500 text-xs">
+        <span className="text-sm">A</span><span className="text-base font-bold">A</span><span className="ml-1">16</span>
+      </div>
+    </aside>
+  );
+}
+
+// ── Custom chart tooltip ────────────────────────────────────────────────────
+
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0]?.payload;
+  return (
+    <div className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white shadow-xl">
+      <p className="font-bold mb-1">{label} · Age {d?.age}</p>
+      {payload.map(p => (
+        <p key={p.dataKey} style={{ color: p.fill || p.stroke }}>
+          {p.name}: R {Number(p.value || 0).toLocaleString('en-ZA', { minimumFractionDigits: 0 })}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// ── Modelling view (full layout) ────────────────────────────────────────────
+
+function ModellingView({ data, clientProfile, onBack }) {
+  const [opts, setOpts] = useState({
+    savingsBoost:    0,
+    preExpReduction: 0,
+    postExpReduction:0,
+    retireAge:       Number(clientProfile?.age) || 65,
+    showLiquidity:   true,
+    showGoals:       true,
+    _baseMonthlyExp: data.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0),
+  });
+
+  const monthlyIncome   = data.incomes.reduce((s, i)  => s + (Number(i.amount)  || 0), 0);
+  const monthlyExpenses = data.expenses.reduce((s, e) => s + (Number(e.amount)  || 0), 0);
+  const surplus = (monthlyIncome - monthlyExpenses) * 12 / 12;
+
+  const points = useMemo(() => projectPortfolio(data, clientProfile, opts), [data, clientProfile, opts]);
+
+  const fmtK = v => {
+    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}m`;
+    if (v >= 1_000)     return `${(v / 1_000).toFixed(0)}k`;
+    return String(v);
+  };
+
+  return (
+    <div className="flex rounded-xl overflow-hidden border border-gray-200" style={{ minHeight: '520px' }}>
+      {/* Modelling sidebar */}
+      <ModelSidebar opts={opts} onChange={setOpts} onBack={onBack} surplus={surplus} />
+
+      {/* Chart area */}
+      <div className="flex-1 flex flex-col bg-gray-50">
+        {/* Toolbar */}
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-white border-b border-gray-200 flex-wrap">
+          <select className="text-xs border border-gray-200 rounded px-2 py-1 bg-white text-gray-700">
+            <option>Real</option><option>Nominal</option>
+          </select>
+          <select className="text-xs border border-gray-200 rounded px-2 py-1 bg-white text-gray-700">
+            <option>Integrated Graph</option><option>Table</option>
+          </select>
+          <div className="flex-1" />
+          <span className="text-xs text-gray-500">Compare:</span>
+          <select className="text-xs border border-gray-200 rounded px-2 py-1 bg-white text-gray-700">
+            <option>Current</option>
+          </select>
+          <span className="text-xs text-gray-500">Plan:</span>
+          <select className="text-xs border border-gray-200 rounded px-2 py-1 bg-white text-gray-700">
+            <option>Scenario 1</option>
+          </select>
+        </div>
+
+        {/* Toggles */}
+        <div className="flex items-center gap-4 px-4 py-2 bg-white border-b border-gray-100">
+          <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+            <button
+              onClick={() => setOpts(o => ({ ...o, showLiquidity: !o.showLiquidity }))}
+              className={`relative inline-flex w-8 h-4 rounded-full transition-colors ${opts.showLiquidity ? 'bg-blue-500' : 'bg-gray-300'}`}>
+              <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${opts.showLiquidity ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </button>
+            Liquidity Overlay
+          </label>
+          <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+            <button
+              onClick={() => setOpts(o => ({ ...o, showGoals: !o.showGoals }))}
+              className={`relative inline-flex w-8 h-4 rounded-full transition-colors ${opts.showGoals ? 'bg-blue-500' : 'bg-gray-300'}`}>
+              <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${opts.showGoals ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </button>
+            Goals
+          </label>
+        </div>
+
+        {/* Chart */}
+        <div className="flex-1 p-4">
+          <p className="text-sm font-semibold text-gray-600 text-center mb-3">Integrated : Life</p>
+          {points.length === 0 ? (
+            <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
+              Enter asset data to see your portfolio projection.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <AreaChart data={points} margin={{ top: 10, right: 10, left: 10, bottom: 30 }}>
+                <defs>
+                  <linearGradient id="gradPortfolio" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#3B82F6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.3} />
+                  </linearGradient>
+                  <linearGradient id="gradGoals" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#1e293b" stopOpacity={0.9} />
+                    <stop offset="95%" stopColor="#1e293b" stopOpacity={0.7} />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+
+                <XAxis dataKey="xLabel" tick={{ fontSize: 10, fill: '#6b7280' }}
+                  label={{ value: '', position: 'insideBottom' }}>
+                </XAxis>
+
+                <YAxis tickFormatter={fmtK} tick={{ fontSize: 10, fill: '#6b7280' }}
+                  label={{ value: 'Total Value', angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: '#9ca3af' } }} />
+
+                <Tooltip content={<ChartTooltip />} />
+
+                {opts.showGoals && (
+                  <Area type="monotone" dataKey="goals" name="Goals"
+                    stackId="1" stroke="#1e293b" fill="url(#gradGoals)" strokeWidth={1} />
+                )}
+                {opts.showLiquidity && (
+                  <Area type="monotone" dataKey="total" name="Portfolio"
+                    stackId="2" stroke="#2563eb" fill="url(#gradPortfolio)" strokeWidth={2} />
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+
+          {/* Age axis below chart */}
+          <div className="flex justify-between px-16 mt-1">
+            {points.filter((_, i) => i % 2 === 0).map(p => (
+              <span key={p.year} className="text-xs text-gray-400">Age {p.age}</span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -914,8 +1210,7 @@ export default function FinancialNeedsStatement({
   };
 
   const renderContent = () => {
-    if (topTab === 'MODELLING') return <ModellingView />;
-    if (topTab === 'PROCEED')   return <ProceedView onComplete={onComplete} data={{ ...data, calcType: 'fns' }} />;
+    if (topTab === 'PROCEED') return <ProceedView onComplete={onComplete} data={{ ...data, calcType: 'fns' }} />;
 
     if (section === null) {
       return (
@@ -953,14 +1248,21 @@ export default function FinancialNeedsStatement({
     <div className="max-w-5xl mx-auto">
       <TopNav active={topTab} onChange={setTopTab} onBudget={() => setShowBudget(true)} />
 
-      <div className="flex" style={{ minHeight: '520px' }}>
-        {renderSidebar()}
-
-        <div className="flex-1 flex flex-col bg-gray-50 rounded-r-xl overflow-hidden border border-gray-200 border-l-0">
-          <ClientHeader section={section} clientProfile={clientProfile} view={view} onViewChange={setView} />
-          {renderContent()}
+      {topTab === 'MODELLING' ? (
+        <ModellingView
+          data={data}
+          clientProfile={clientProfile}
+          onBack={() => setTopTab('FINANCIALS')}
+        />
+      ) : (
+        <div className="flex" style={{ minHeight: '520px' }}>
+          {renderSidebar()}
+          <div className="flex-1 flex flex-col bg-gray-50 rounded-r-xl overflow-hidden border border-gray-200 border-l-0">
+            <ClientHeader section={section} clientProfile={clientProfile} view={view} onViewChange={setView} />
+            {renderContent()}
+          </div>
         </div>
-      </div>
+      )}
 
       {renderModal()}
       {showBudget && (
