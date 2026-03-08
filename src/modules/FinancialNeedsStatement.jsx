@@ -73,6 +73,20 @@ function itemValue(it) {
   return Number(it.value || it.amount || it.balance || 0);
 }
 
+// 2024/2025 SA income tax (annual)
+function calcAnnualTax(annualIncome, age = 0) {
+  let tax;
+  if      (annualIncome <= 237100)  tax = annualIncome * 0.18;
+  else if (annualIncome <= 370500)  tax = 42678  + 0.26 * (annualIncome - 237100);
+  else if (annualIncome <= 512800)  tax = 77362  + 0.31 * (annualIncome - 370500);
+  else if (annualIncome <= 673000)  tax = 121475 + 0.36 * (annualIncome - 512800);
+  else if (annualIncome <= 857900)  tax = 179147 + 0.39 * (annualIncome - 673000);
+  else if (annualIncome <= 1817000) tax = 251258 + 0.41 * (annualIncome - 857900);
+  else                              tax = 644489 + 0.45 * (annualIncome - 1817000);
+  const rebate = 17235 + (age >= 65 ? 9444 : 0) + (age >= 75 ? 3145 : 0);
+  return Math.max(0, tax - rebate);
+}
+
 // ── Donut chart ────────────────────────────────────────────────────────────
 
 function DonutChart({ value = 0, color, size = 120, stroke = 16 }) {
@@ -297,16 +311,22 @@ function GoalModal({ item, isNew, onSave, onCancel, onDelete }) {
 
 const TOP_TABS = ['FINANCIALS', 'MODELLING', 'PROCEED'];
 
-function TopNav({ active, onChange }) {
+function TopNav({ active, onChange, onBudget }) {
   return (
-    <div className="flex items-center border-b border-gray-200 bg-white px-4">
-      {TOP_TABS.map(tab => (
-        <button key={tab} onClick={() => onChange(tab)}
-          className={`px-5 py-3 text-sm font-semibold tracking-wide transition-colors border-b-2 -mb-px
-            ${active === tab ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-800'}`}>
-          {tab}
-        </button>
-      ))}
+    <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4">
+      <div className="flex">
+        {TOP_TABS.map(tab => (
+          <button key={tab} onClick={() => onChange(tab)}
+            className={`px-5 py-3 text-sm font-semibold tracking-wide transition-colors border-b-2 -mb-px
+              ${active === tab ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-800'}`}>
+            {tab}
+          </button>
+        ))}
+      </div>
+      <button onClick={onBudget}
+        className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors flex items-center gap-1.5">
+        📊 Budget View
+      </button>
     </div>
   );
 }
@@ -640,6 +660,123 @@ function GoalsTable({ goals, onEdit }) {
   );
 }
 
+// ── Budget View modal ──────────────────────────────────────────────────────
+
+function BudgetView({ clientProfile, data, onClose }) {
+  const age = Number(clientProfile?.age) || 0;
+
+  const monthlyIncome   = data.incomes.reduce((s, i)  => s + (Number(i.amount)  || 0), 0);
+  const annualIncome    = monthlyIncome * 12;
+  const monthlyExpenses = data.expenses.reduce((s, e) => s + (Number(e.amount)  || 0), 0);
+  const annualExpenses  = monthlyExpenses * 12;
+  const monthlyGoals    = data.goals.reduce((s, g)    => s + (Number(g.value)   || 0), 0) / 12;
+  const annualGoals     = monthlyGoals * 12;
+  const annualTax       = calcAnnualTax(annualIncome, age);
+  const monthlyTax      = annualTax / 12;
+  const monthlyNett     = monthlyIncome  - monthlyTax  - monthlyExpenses  - monthlyGoals;
+  const annualNett      = annualIncome   - annualTax   - annualExpenses   - annualGoals;
+
+  // Planned = current × 1.06 (single-year escalation estimate)
+  const P = 1.06;
+  const pMonthlyIncome   = monthlyIncome   * P;
+  const pAnnualIncome    = annualIncome    * P;
+  const pAnnualTax       = calcAnnualTax(pAnnualIncome, age);
+  const pMonthlyTax      = pAnnualTax / 12;
+  const pMonthlyExpenses = monthlyExpenses * P;
+  const pAnnualExpenses  = annualExpenses  * P;
+  const pMonthlyGoals    = monthlyGoals;
+  const pAnnualGoals     = annualGoals;
+  const pMonthlyNett     = pMonthlyIncome  - pMonthlyTax  - pMonthlyExpenses  - pMonthlyGoals;
+  const pAnnualNett      = pAnnualIncome   - pAnnualTax   - pAnnualExpenses   - pAnnualGoals;
+
+  const clientName = [clientProfile?.firstNames, clientProfile?.surname].filter(Boolean).join(' ') || 'Client';
+
+  function BudgetTable({ label, mIncome, yIncome, mTax, yTax, mExp, yExp, mGoals, yGoals, mNett, yNett }) {
+    const rows = [
+      { label: 'Incomes',      m: mIncome, y: yIncome, nettRow: false },
+      { label: 'Taxes',        m: mTax,    y: yTax,    nettRow: false },
+      { label: 'Expenses',     m: mExp,    y: yExp,    nettRow: false },
+      { label: 'Budget Goals', m: mGoals,  y: yGoals,  nettRow: false },
+      { label: 'Nett',         m: mNett,   y: yNett,   nettRow: true  },
+    ];
+    const fv = (n) => `R ${Number(n || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    return (
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-gray-700 mb-3">{label}</p>
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr className="border-b border-gray-200">
+              <th className="text-left pb-2 text-gray-500 font-semibold w-28" />
+              <th className="text-right pb-2 text-gray-500 font-semibold pr-3 whitespace-nowrap">Month 1</th>
+              <th className="text-right pb-2 text-gray-500 font-semibold pr-3 whitespace-nowrap">Year 1</th>
+              <th className="text-right pb-2 text-gray-500 font-semibold pr-3 whitespace-nowrap leading-tight">Month 1<br/>Retirement</th>
+              <th className="text-right pb-2 text-gray-500 font-semibold whitespace-nowrap leading-tight">Year 1<br/>Retirement</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(row => {
+              const isNeg = row.nettRow && row.m < 0;
+              const cls   = `py-2 text-right ${isNeg ? 'text-red-600 font-bold' : row.nettRow ? 'text-gray-800 font-bold' : 'text-gray-700'}`;
+              return (
+                <tr key={row.label} className="border-b border-gray-100">
+                  <td className={`py-2 text-gray-700 ${row.nettRow ? 'font-bold' : ''}`}>{row.label}</td>
+                  <td className={`${cls} pr-3`}>{fv(row.m)}</td>
+                  <td className={`${cls} pr-3`}>{fv(row.y)}</td>
+                  {/* Retirement = same as current for now */}
+                  <td className={`${cls} pr-3`}>{fv(row.m)}</td>
+                  <td className={cls}>{fv(row.y)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-4 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <p className="text-sm font-bold text-gray-800">Budget View for: {clientName}</p>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+        </div>
+
+        <div className="px-6 py-5 flex gap-6 overflow-x-auto">
+          <BudgetTable
+            label="Current"
+            mIncome={monthlyIncome}   yIncome={annualIncome}
+            mTax={monthlyTax}         yTax={annualTax}
+            mExp={monthlyExpenses}    yExp={annualExpenses}
+            mGoals={monthlyGoals}     yGoals={annualGoals}
+            mNett={monthlyNett}       yNett={annualNett}
+          />
+          <div className="w-px bg-gray-200 flex-shrink-0" />
+          <BudgetTable
+            label="Planned (est. +6%)"
+            mIncome={pMonthlyIncome}   yIncome={pAnnualIncome}
+            mTax={pMonthlyTax}         yTax={pAnnualTax}
+            mExp={pMonthlyExpenses}    yExp={pAnnualExpenses}
+            mGoals={pMonthlyGoals}     yGoals={pAnnualGoals}
+            mNett={pMonthlyNett}       yNett={pAnnualNett}
+          />
+        </div>
+
+        <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50">
+          <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-700 uppercase tracking-wide px-4 py-2">
+            Cancel
+          </button>
+          <button onClick={onClose}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-6 py-2 rounded-lg transition-colors uppercase tracking-wide">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Stub views ─────────────────────────────────────────────────────────────
 
 function ModellingView() {
@@ -694,12 +831,13 @@ export default function FinancialNeedsStatement({
   onComplete,
   onBack,
 }) {
-  const [topTab,     setTopTab]     = useState('FINANCIALS');
-  const [section,    setSection]    = useState(null);
-  const [view,       setView]       = useState('current');
-  const [goalsTab,   setGoalsTab]   = useState('GOALS');
-  const [openMenu,   setOpenMenu]   = useState(null);
-  const [modal,      setModal]      = useState(null);
+  const [topTab,      setTopTab]     = useState('FINANCIALS');
+  const [section,     setSection]    = useState(null);
+  const [view,        setView]       = useState('current');
+  const [goalsTab,    setGoalsTab]   = useState('GOALS');
+  const [openMenu,    setOpenMenu]   = useState(null);
+  const [modal,       setModal]      = useState(null);
+  const [showBudget,  setShowBudget] = useState(false);
 
   const [data, setData] = useState({
     assets:      initialData.assets      || [],
@@ -813,7 +951,7 @@ export default function FinancialNeedsStatement({
 
   return (
     <div className="max-w-5xl mx-auto">
-      <TopNav active={topTab} onChange={setTopTab} />
+      <TopNav active={topTab} onChange={setTopTab} onBudget={() => setShowBudget(true)} />
 
       <div className="flex" style={{ minHeight: '520px' }}>
         {renderSidebar()}
@@ -825,6 +963,13 @@ export default function FinancialNeedsStatement({
       </div>
 
       {renderModal()}
+      {showBudget && (
+        <BudgetView
+          clientProfile={clientProfile}
+          data={data}
+          onClose={() => setShowBudget(false)}
+        />
+      )}
     </div>
   );
 }
