@@ -381,7 +381,7 @@ function SectionSidebar({ section, total, onBack, onAdd, goalsTab, onGoalsTabCha
                : ['Other'];
 
   return (
-    <aside className="w-52 flex-shrink-0 bg-gray-800 text-white flex flex-col rounded-l-xl overflow-hidden">
+    <aside className="w-52 flex-shrink-0 bg-gray-800 text-white flex flex-col rounded-l-xl overflow-visible relative">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-3 border-b border-gray-700">
         <button onClick={onBack}
@@ -395,7 +395,7 @@ function SectionSidebar({ section, total, onBack, onAdd, goalsTab, onGoalsTabCha
             {showAdd ? '×' : '+'}
           </button>
           {showAdd && (
-            <div className="absolute z-50 top-full right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-2xl overflow-hidden">
+            <div className="absolute z-50 top-0 left-full ml-2 w-56 bg-white border border-gray-200 rounded-lg shadow-2xl overflow-hidden">
               <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100">
                 <span className="text-xs font-semibold text-gray-500 uppercase">Add {label}</span>
                 <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-700 text-lg leading-none">×</button>
