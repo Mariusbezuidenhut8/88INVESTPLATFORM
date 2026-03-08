@@ -37,6 +37,14 @@ const LIFESTYLE_CATEGORIES = [
   'Entertainment', 'Food & Groceries', 'Clothing', 'Travel',
 ];
 
+// Real return rates (above CPI) per strategy
+const INVESTMENT_STRATEGIES = [
+  { label: 'Inflation Plus 2-3%', realReturn: 0.025, desc: 'Conservative / Capital Preservation' },
+  { label: 'Inflation Plus 4-5%', realReturn: 0.045, desc: 'Moderate / Balanced'                 },
+  { label: 'Inflation Plus 6-7%', realReturn: 0.065, desc: 'Aggressive Growth'                   },
+  { label: 'Maximum Growth',      realReturn: 0.09,  desc: 'Equity / Maximum Growth'              },
+];
+
 const SECTION_COLORS = {
   goals:       '#14B8A6',
   assets:      '#3B82F6',
@@ -783,20 +791,27 @@ function BudgetView({ clientProfile, data, onClose }) {
 
 // ── Portfolio projection ────────────────────────────────────────────────────
 
+function strategyRate(label) {
+  return INVESTMENT_STRATEGIES.find(s => s.label === label)?.realReturn ?? 0.045;
+}
+
 function projectPortfolio(data, clientProfile, opts) {
   const currentAge  = Number(clientProfile?.age) || 65;
   const retireAge   = Number(opts.retireAge)      || currentAge;
-  const returnRate  = 0.07; // 7% real annual
   const currentYear = new Date().getFullYear();
+
+  // Per-phase real return rates
+  const preRate  = strategyRate(opts.preStrategy);
+  const postRate = strategyRate(opts.postStrategy);
 
   let portfolio  = data.assets.reduce((s, a) => s + (Number(a.value)  || 0), 0);
   const goalsTotal = data.goals.reduce((s, g) => s + (Number(g.value) || 0), 0);
 
-  const baseMonthlyInc    = data.incomes.reduce((s, i)  => s + (Number(i.amount) || 0), 0);
-  const baseMonthlyExp    = data.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  const monthlyInc        = baseMonthlyInc + (Number(opts.savingsBoost)      || 0);
-  const preMonthlyExp     = baseMonthlyExp - (Number(opts.preExpReduction)   || 0);
-  const postMonthlyExp    = baseMonthlyExp - (Number(opts.postExpReduction)  || 0);
+  const baseMonthlyInc = data.incomes.reduce((s, i)  => s + (Number(i.amount) || 0), 0);
+  const baseMonthlyExp = data.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const monthlyInc     = baseMonthlyInc + (Number(opts.savingsBoost)     || 0);
+  const preMonthlyExp  = baseMonthlyExp - (Number(opts.preExpReduction)  || 0);
+  const postMonthlyExp = baseMonthlyExp - (Number(opts.postExpReduction) || 0);
 
   const points = [];
   const maxAge = 119;
@@ -805,21 +820,20 @@ function projectPortfolio(data, clientProfile, opts) {
     const age      = currentAge + y;
     const year     = currentYear + y;
     const retired  = age >= retireAge;
+    const rate     = retired ? postRate : preRate;
     const annualNet = (monthlyInc - (retired ? postMonthlyExp : preMonthlyExp)) * 12;
 
     if (y % 5 === 0) {
       const total = Math.max(0, Math.round(portfolio));
       points.push({
-        year,
-        age,
+        year, age,
         xLabel: String(year),
         total,
         goals: opts.showGoals ? Math.max(0, Math.min(goalsTotal, total * 0.08)) : 0,
-        liquidity: opts.showLiquidity ? total : 0,
       });
     }
 
-    portfolio = Math.max(0, portfolio * (1 + returnRate) + annualNet);
+    portfolio = Math.max(0, portfolio * (1 + rate) + annualNet);
   }
 
   return points;
@@ -828,9 +842,10 @@ function projectPortfolio(data, clientProfile, opts) {
 // ── Modelling sidebar ───────────────────────────────────────────────────────
 
 const EXPLORE_TABS = [
-  { id: 'savings',  icon: '💹', tip: 'Increase Savings'   },
-  { id: 'spend',    icon: '📉', tip: 'Spend Less'         },
-  { id: 'retire',   icon: '⏰', tip: 'Work Longer'        },
+  { id: 'savings',  icon: '💹', tip: 'Increase Savings'            },
+  { id: 'spend',    icon: '📉', tip: 'Spend Less'                  },
+  { id: 'retire',   icon: '⏰', tip: 'Work Longer'                 },
+  { id: 'strategy', icon: '📈', tip: 'Change Investment Strategy'  },
 ];
 
 function ModelSidebar({ opts, onChange, onBack, surplus }) {
@@ -934,6 +949,59 @@ function ModelSidebar({ opts, onChange, onBack, surplus }) {
             </div>
           </>
         )}
+
+        {tab === 'strategy' && (
+          <>
+            <p className="text-xs font-semibold text-white">Change Investment Strategy</p>
+
+            <div>
+              <p className="text-xs text-gray-300 font-semibold mb-2">Pre-Retirement:</p>
+              <select
+                value={opts.preStrategy}
+                onChange={e => s('preStrategy')(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 text-white text-xs rounded px-2 py-1.5 focus:outline-none focus:border-teal-400"
+              >
+                {INVESTMENT_STRATEGIES.map(st => (
+                  <option key={st.label} value={st.label}>{st.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {INVESTMENT_STRATEGIES.find(st => st.label === opts.preStrategy)?.desc}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-300 font-semibold mb-2">Post-Retirement:</p>
+              <select
+                value={opts.postStrategy}
+                onChange={e => s('postStrategy')(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 text-white text-xs rounded px-2 py-1.5 focus:outline-none focus:border-teal-400"
+              >
+                {INVESTMENT_STRATEGIES.map(st => (
+                  <option key={st.label} value={st.label}>{st.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {INVESTMENT_STRATEGIES.find(st => st.label === opts.postStrategy)?.desc}
+              </p>
+            </div>
+
+            <div className="mt-2 p-3 bg-gray-700/50 rounded-lg border border-gray-600">
+              <p className="text-xs text-gray-400 leading-relaxed">
+                <span className="text-yellow-400 font-semibold">Note:</span> This changes the projected real return for the entire portfolio. Pre-retirement rate applies until retirement age; post-retirement rate applies thereafter.
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              {INVESTMENT_STRATEGIES.map(st => (
+                <div key={st.label} className="flex items-center justify-between text-xs text-gray-500">
+                  <span>{st.label}</span>
+                  <span className="text-teal-400 font-mono">+{(st.realReturn * 100).toFixed(1)}% real</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="px-4 py-3 border-t border-gray-700 flex items-center gap-2 text-gray-500 text-xs">
@@ -968,6 +1036,8 @@ function ModellingView({ data, clientProfile, onBack }) {
     preExpReduction: 0,
     postExpReduction:0,
     retireAge:       Number(clientProfile?.age) || 65,
+    preStrategy:     'Inflation Plus 4-5%',
+    postStrategy:    'Inflation Plus 2-3%',
     showLiquidity:   true,
     showGoals:       true,
     _baseMonthlyExp: data.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0),
