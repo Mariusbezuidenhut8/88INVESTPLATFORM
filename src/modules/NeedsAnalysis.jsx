@@ -16,10 +16,11 @@
  */
 
 import { useState } from 'react';
-import RetirementCalculator from './RetirementCalculator.jsx';
-import GoalCalculator       from './GoalCalculator.jsx';
-import EducationCalculator  from './EducationCalculator.jsx';
-import TaxCalculator        from './TaxCalculator.jsx';
+import RetirementCalculator      from './RetirementCalculator.jsx';
+import GoalCalculator            from './GoalCalculator.jsx';
+import EducationCalculator       from './EducationCalculator.jsx';
+import TaxCalculator             from './TaxCalculator.jsx';
+import FinancialNeedsStatement   from './FinancialNeedsStatement.jsx';
 
 export default function NeedsAnalysis({ clientProfile, initialData = {}, onChange, onComplete, onSkip }) {
   const [calcType, setCalcType] = useState(initialData.calcType || null);
@@ -56,6 +57,19 @@ export default function NeedsAnalysis({ clientProfile, initialData = {}, onChang
         initialData={initialData.calcType === 'education' ? initialData : {}}
         onChange={data => onChange?.({ ...data, calcType: 'education' })}
         onComplete={data => onComplete?.({ ...data, calcType: 'education' })}
+        onBack={() => setCalcType(null)}
+      />
+    );
+  }
+
+  // ── Financial Needs Statement ──
+  if (calcType === 'fns') {
+    return (
+      <FinancialNeedsStatement
+        clientProfile={clientProfile}
+        initialData={initialData.calcType === 'fns' ? initialData : {}}
+        onChange={data => onChange?.({ ...data, calcType: 'fns' })}
+        onComplete={data => onComplete?.({ ...data, calcType: 'fns' })}
         onBack={() => setCalcType(null)}
       />
     );
@@ -126,6 +140,17 @@ export default function NeedsAnalysis({ clientProfile, initialData = {}, onChang
           <p className="text-base font-bold text-gray-800 group-hover:text-blue-700">Tax Calculator</p>
           <p className="text-xs text-gray-500 mt-2 leading-relaxed">
             Calculate income tax, average rate, and — critically — the <strong className="text-gray-600">marginal tax rate</strong> to determine whether a Unit Trust or Endowment wrapper is more tax efficient.
+          </p>
+        </button>
+
+        <button
+          onClick={() => setCalcType('fns')}
+          className="bg-white border-2 border-gray-200 hover:border-blue-400 rounded-xl p-5 text-left transition-all hover:shadow-md group sm:col-span-2"
+        >
+          <div className="text-3xl mb-3">📋</div>
+          <p className="text-base font-bold text-gray-800 group-hover:text-blue-700">Financial Needs Statement</p>
+          <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+            Capture a full client financial picture — assets, incomes, expenses, liabilities, and goals — structured in the Integrate FNA layout with Current and Planned views.
           </p>
         </button>
 
