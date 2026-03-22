@@ -21,16 +21,18 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import ClientProfile         from './modules/ClientProfile.jsx';
 import NeedsAnalysis         from './modules/NeedsAnalysis.jsx';
 import DecisionTree          from './modules/DecisionTree.jsx';
-import ProviderScoring from './modules/ProviderScoring.jsx';
-import FeeDisclosure   from './modules/FeeDisclosure.jsx';
-import ContentBuilder  from './modules/ContentBuilder.jsx';
-import ROADocument     from './modules/ROADocument.jsx';
+import ProviderScoring       from './modules/ProviderScoring.jsx';
+import FeeDisclosure         from './modules/FeeDisclosure.jsx';
+import ContentBuilder        from './modules/ContentBuilder.jsx';
+import ROADocument           from './modules/ROADocument.jsx';
 import InvestmentCAR         from './modules/InvestmentCAR.jsx';
 import InvestmentCARDocument from './modules/InvestmentCARDocument.jsx';
+import AuthGate, { getSession, clearSession } from './modules/AuthGate.jsx';
 import CARParagraphManager   from './admin/CARParagraphManager.jsx';
-import ParagraphManager  from './admin/ParagraphManager.jsx';
-import ProfileSettings   from './admin/ProfileSettings.jsx';
-import SavedROAsManager  from './admin/SavedROAsManager.jsx';
+import AccessCodeManager     from './admin/AccessCodeManager.jsx';
+import ParagraphManager      from './admin/ParagraphManager.jsx';
+import ProfileSettings       from './admin/ProfileSettings.jsx';
+import SavedROAsManager      from './admin/SavedROAsManager.jsx';
 import {
   saveROA, saveDraft, loadDraft, clearDraft,
   loadProfile, saveProfile, generateROAId,
@@ -133,10 +135,20 @@ function LandingPage({ onSelect }) {
 }
 
 export default function App() {
+  // ── Auth session ──────────────────────────────────────────────────────────
+  const [session, setSession] = useState(() => getSession());
+
+  const handleLogout = useCallback(() => {
+    clearSession();
+    setSession(null);
+    setRoaType(null);
+  }, []);
+
   const [roaType,           setRoaType]           = useState(null); // null | 'standard' | 'investmentCAR'
   const [carData,           setCarData]           = useState(null);
   const [showCARDoc,        setShowCARDoc]        = useState(false);
   const [showCARParaManager,setShowCARParaManager]= useState(false);
+  const [showAccessCodes,   setShowAccessCodes]   = useState(false);
   const [step,           setStep]           = useState('client');
   const [completedSteps, setCompleted]      = useState([]);
   const [roaData,        setRoaData]        = useState({
@@ -267,12 +279,18 @@ export default function App() {
 
   const productKey = roaData.providerResult?.productKey || roaData.treeResult?.productKey || 'unit trust';
 
-  // ── Landing page ────────────────────────────────────────────────────────
+  // ── Auth gate ────────────────────────────────────────────────────────────
+  if (!session) {
+    return <AuthGate onAuth={setSession} />;
+  }
+
+  // ── Landing page ─────────────────────────────────────────────────────────
   if (roaType === null) {
     return (
       <>
         <LandingPage onSelect={(type) => setRoaType(type)} />
         {showSettings && <ProfileSettings onClose={() => setShowSettings(false)} onChange={p => { setAdvisorProfile(p); saveProfile(p); }} />}
+        {showAccessCodes && session?.isAdmin && <AccessCodeManager onClose={() => setShowAccessCodes(false)} />}
       </>
     );
   }
@@ -287,45 +305,28 @@ export default function App() {
               <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">R</div>
               <div className="hidden sm:block">
                 <p className="text-sm font-bold text-gray-800 leading-tight">ROA Builder</p>
-                <p className="text-xs text-gray-400 leading-tight">Investment CAR</p>
+                <p className="text-xs text-gray-400 leading-tight">{session?.advisorName || 'Investment CAR'}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => { setRoaType(null); setCarData(null); setShowCARDoc(false); }}
-                className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
-              >
-                ← Home
-              </button>
-              <button
-                onClick={() => setShowCARParaManager(true)}
-                className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors hidden sm:block"
-              >
-                Paragraphs
-              </button>
-              <button onClick={() => setShowSettings(true)} className="text-xs bg-gray-800 text-white rounded-lg px-3 py-1.5 hover:bg-gray-700 transition-colors">
-                Settings
-              </button>
+              <button onClick={() => { setRoaType(null); setCarData(null); setShowCARDoc(false); }} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">← Home</button>
+              <button onClick={() => setShowCARParaManager(true)} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors hidden sm:block">Paragraphs</button>
+              {session?.isAdmin && <button onClick={() => setShowAccessCodes(true)} className="text-xs text-amber-600 border border-amber-200 rounded-lg px-3 py-1.5 hover:bg-amber-50 transition-colors hidden sm:block">🔐 Codes</button>}
+              <button onClick={() => setShowSettings(true)} className="text-xs bg-gray-800 text-white rounded-lg px-3 py-1.5 hover:bg-gray-700 transition-colors">Settings</button>
+              <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">Sign out</button>
             </div>
           </div>
         </nav>
         <main className="max-w-5xl mx-auto px-4 py-8">
           {!showCARDoc ? (
-            <InvestmentCAR
-              advisorProfile={advisorProfile}
-              initialData={carData}
-              onComplete={(data) => { setCarData(data); setShowCARDoc(true); }}
-            />
+            <InvestmentCAR advisorProfile={advisorProfile} initialData={carData} onComplete={(data) => { setCarData(data); setShowCARDoc(true); }} />
           ) : (
-            <InvestmentCARDocument
-              carData={carData}
-              advisorProfile={advisorProfile}
-              onEdit={() => setShowCARDoc(false)}
-            />
+            <InvestmentCARDocument carData={carData} advisorProfile={advisorProfile} onEdit={() => setShowCARDoc(false)} />
           )}
         </main>
-        {showSettings        && <ProfileSettings      onClose={() => setShowSettings(false)}        onChange={p => { setAdvisorProfile(p); saveProfile(p); }} />}
-        {showCARParaManager  && <CARParagraphManager  onClose={() => setShowCARParaManager(false)} />}
+        {showSettings       && <ProfileSettings     onClose={() => setShowSettings(false)}       onChange={p => { setAdvisorProfile(p); saveProfile(p); }} />}
+        {showCARParaManager && <CARParagraphManager onClose={() => setShowCARParaManager(false)} />}
+        {showAccessCodes && session?.isAdmin && <AccessCodeManager onClose={() => setShowAccessCodes(false)} />}
       </div>
     );
   }
@@ -350,24 +351,13 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowSaved(true)} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
-              Saved
-            </button>
-            <button
-              onClick={() => { setRoaType(null); }}
-              className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
-            >
-              ← Home
-            </button>
-            <button onClick={handleNewROA} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
-              New ROA
-            </button>
-            <button onClick={() => setShowParaManager(true)} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors hidden sm:block">
-              Paragraphs
-            </button>
-            <button onClick={() => setShowSettings(true)} className="text-xs bg-gray-800 text-white rounded-lg px-3 py-1.5 hover:bg-gray-700 transition-colors">
-              Settings
-            </button>
+            <button onClick={() => setShowSaved(true)} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">Saved</button>
+            <button onClick={() => { setRoaType(null); }} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">← Home</button>
+            <button onClick={handleNewROA} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">New ROA</button>
+            <button onClick={() => setShowParaManager(true)} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors hidden sm:block">Paragraphs</button>
+            {session?.isAdmin && <button onClick={() => setShowAccessCodes(true)} className="text-xs text-amber-600 border border-amber-200 rounded-lg px-3 py-1.5 hover:bg-amber-50 transition-colors hidden sm:block">🔐 Codes</button>}
+            <button onClick={() => setShowSettings(true)} className="text-xs bg-gray-800 text-white rounded-lg px-3 py-1.5 hover:bg-gray-700 transition-colors">Settings</button>
+            <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">Sign out</button>
           </div>
         </div>
 
@@ -498,9 +488,10 @@ export default function App() {
       </main>
 
       {/* ── ADMIN OVERLAYS ── */}
-      {showSettings    && <ProfileSettings  onClose={() => setShowSettings(false)}    onChange={p => { setAdvisorProfile(p); saveProfile(p); }} />}
-      {showParaManager && <ParagraphManager onClose={() => setShowParaManager(false)} />}
+      {showSettings    && <ProfileSettings   onClose={() => setShowSettings(false)}    onChange={p => { setAdvisorProfile(p); saveProfile(p); }} />}
+      {showParaManager && <ParagraphManager  onClose={() => setShowParaManager(false)} />}
       {showSaved       && <SavedROAsManager  onLoad={handleLoadROA}                    onClose={() => setShowSaved(false)} />}
+      {showAccessCodes && session?.isAdmin && <AccessCodeManager onClose={() => setShowAccessCodes(false)} />}
 
     </div>
   );
