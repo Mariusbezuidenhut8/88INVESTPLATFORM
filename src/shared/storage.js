@@ -97,6 +97,10 @@ export const loadProfile = () =>
 export const saveParagraphOverrides = (overrides) => save("paragraphs", overrides);
 export const loadParagraphOverrides = () => load("paragraphs", {});
 
+// Custom CAR paragraph overrides
+export const saveCARParagraphOverrides = (overrides) => save("car_paragraphs", overrides);
+export const loadCARParagraphOverrides = () => load("car_paragraphs", {});
+
 // Custom provider score overrides
 export const saveProviderOverrides = (overrides) => save("providers", overrides);
 export const loadProviderOverrides = () => load("providers", {});

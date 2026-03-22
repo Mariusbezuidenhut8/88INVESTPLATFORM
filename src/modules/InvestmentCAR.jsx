@@ -1,0 +1,938 @@
+/**
+ * InvestmentCAR.jsx
+ * Investment Client Advice Record wizard.
+ * Mirrors the Fairbairn Consult "Investment Client Advice Record" PDF structure:
+ *   Step 1 – Basic Info (header fields)
+ *   Step 2 – Section A: Client Profile
+ *   Step 3 – Section B: Needs & Goals grid
+ *   Step 4 – Section C: Products Considered + Section D: Recommendation
+ *   Step 5 – Section E: Implementation + Section F: Important Info
+ *   Step 6 – Section G: Fees + Section H: FA Declaration
+ *   Step 7 – Preview (hands off to InvestmentCARDocument)
+ *
+ * For every free-text field the advisor sees a "Paragraph Suggestions" panel
+ * where they can click → Replace or Append pre-written paragraphs.
+ */
+
+import { useState, useCallback } from 'react';
+import { getCARParagraphs } from '../data/investmentCARParagraphs.js';
+
+// ─── Tokens ──────────────────────────────────────────────────────────────────
+function applyTokens(text, carData) {
+  if (!text) return text;
+  const client = carData.clientName || '[Client Name]';
+  return text
+    .replace(/\[Client Name\]/g, client)
+    .replace(/\[Provider Name\]/g, carData.sectionC?.[0]?.company || '[Provider Name]')
+    .replace(/\[Product Type\]/g, carData.sectionC?.[0]?.product || '[Product Type]');
+}
+
+// ─── Paragraph picker chip ────────────────────────────────────────────────────
+function ParaChip({ para, onAppend, onReplace }) {
+  return (
+    <div className="group rounded-lg border border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/40 p-3 mb-2 transition-all">
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <p className="text-xs font-semibold text-gray-700 flex-1">{para.label}</p>
+        <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={() => onReplace(para.text)}
+            className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded hover:bg-blue-700"
+          >
+            Replace
+          </button>
+          <button
+            onClick={() => onAppend(para.text)}
+            className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded hover:bg-gray-200"
+          >
+            Append
+          </button>
+        </div>
+      </div>
+      <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">{para.text}</p>
+      {para.tags?.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {para.tags.map(t => (
+            <span key={t} className="text-xs bg-gray-100 text-gray-400 rounded px-1.5 py-0.5">{t}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Text field with paragraph panel ─────────────────────────────────────────
+function TextFieldWithSuggestions({ label, hint, value, onChange, sectionKey, filterTags = [], carData, rows = 5 }) {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const paragraphs = getCARParagraphs(sectionKey, filterTags);
+
+  const handleReplace = useCallback((text) => {
+    onChange(applyTokens(text, carData));
+    setShowSuggestions(false);
+  }, [onChange, carData]);
+
+  const handleAppend = useCallback((text) => {
+    const applied = applyTokens(text, carData);
+    onChange(value ? `${value}\n\n${applied}` : applied);
+    setShowSuggestions(false);
+  }, [onChange, value, carData]);
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-sm font-semibold text-gray-700">{label}</label>
+        {paragraphs.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowSuggestions(s => !s)}
+            className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+              showSuggestions
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-blue-600 border-blue-300 hover:bg-blue-50'
+            }`}
+          >
+            {showSuggestions ? '↑ Hide suggestions' : `✦ ${paragraphs.length} suggestions`}
+          </button>
+        )}
+      </div>
+      {hint && <p className="text-xs text-gray-400 mb-2">{hint}</p>}
+
+      {showSuggestions && (
+        <div className="mb-3 rounded-xl border border-blue-100 bg-blue-50/30 p-3 max-h-72 overflow-y-auto">
+          <p className="text-xs font-semibold text-blue-700 mb-2">Click a paragraph to use it:</p>
+          {paragraphs.map(para => (
+            <ParaChip
+              key={para.id}
+              para={para}
+              onReplace={handleReplace}
+              onAppend={handleAppend}
+            />
+          ))}
+        </div>
+      )}
+
+      <textarea
+        rows={rows}
+        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y leading-relaxed"
+        placeholder={`Enter ${label.toLowerCase()} here, or select from suggestions above…`}
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+      />
+      {value && (
+        <p className="text-xs text-gray-400 mt-1 text-right">{value.split(/\s+/).filter(Boolean).length} words</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Section heading ──────────────────────────────────────────────────────────
+function SectionHeading({ label, sub }) {
+  return (
+    <div className="mb-5">
+      <h3 className="text-base font-bold text-gray-800">{label}</h3>
+      {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+// ─── Needs grid row ───────────────────────────────────────────────────────────
+const ADDRESSED_OPTIONS = ['Y', 'N', 'P', 'L'];
+
+function NeedsRow({ label, data, onChange }) {
+  const set = (field, val) => onChange({ ...data, [field]: val });
+  return (
+    <tr className="border-b border-gray-100 hover:bg-gray-50/50">
+      <td className="py-2 px-3 text-sm font-medium text-gray-700 whitespace-nowrap">{label}</td>
+      <td className="py-2 px-3">
+        <input
+          type="text"
+          placeholder="R amount"
+          className="w-32 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          value={data.quantified || ''}
+          onChange={e => set('quantified', e.target.value)}
+        />
+      </td>
+      <td className="py-2 px-3">
+        <input
+          type="text"
+          placeholder="1, 2…"
+          className="w-14 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 text-center"
+          value={data.priority || ''}
+          onChange={e => set('priority', e.target.value)}
+        />
+      </td>
+      <td className="py-2 px-3">
+        <div className="flex gap-1">
+          {ADDRESSED_OPTIONS.map(opt => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => set('addressed', data.addressed === opt ? '' : opt)}
+              className={`w-7 h-7 rounded text-xs font-bold border transition-all ${
+                data.addressed === opt
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-400 border-gray-200 hover:border-blue-300'
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </td>
+      <td className="py-2 px-3">
+        <input
+          type="text"
+          placeholder="Shortfall"
+          className="w-28 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          value={data.shortfall || ''}
+          onChange={e => set('shortfall', e.target.value)}
+        />
+      </td>
+      <td className="py-2 px-3">
+        <input
+          type="text"
+          placeholder="Review date"
+          className="w-28 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          value={data.reviewDate || ''}
+          onChange={e => set('reviewDate', e.target.value)}
+        />
+      </td>
+    </tr>
+  );
+}
+
+// ─── Products considered table row ───────────────────────────────────────────
+function ProductRow({ row, onChange, onRemove }) {
+  const set = (field, val) => onChange({ ...row, [field]: val });
+  return (
+    <tr className="border-b border-gray-100">
+      <td className="py-2 px-2">
+        <input
+          type="text"
+          className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+          placeholder="e.g. Allan Gray"
+          value={row.company || ''}
+          onChange={e => set('company', e.target.value)}
+        />
+      </td>
+      <td className="py-2 px-2">
+        <input
+          type="text"
+          className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+          placeholder="e.g. Retirement Annuity"
+          value={row.product || ''}
+          onChange={e => set('product', e.target.value)}
+        />
+      </td>
+      <td className="py-2 px-2">
+        <input
+          type="text"
+          className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+          placeholder="R amount / pm"
+          value={row.amount || ''}
+          onChange={e => set('amount', e.target.value)}
+        />
+      </td>
+      <td className="py-2 px-2 text-center">
+        <button
+          type="button"
+          onClick={() => set('fundFactSheet', !row.fundFactSheet)}
+          className={`w-8 h-8 rounded border text-xs font-bold transition-all ${
+            row.fundFactSheet ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-400 border-gray-200 hover:border-blue-300'
+          }`}
+        >Y</button>
+      </td>
+      <td className="py-2 px-2 text-center">
+        <button
+          type="button"
+          onClick={() => set('quoteOnFile', !row.quoteOnFile)}
+          className={`w-8 h-8 rounded border text-xs font-bold transition-all ${
+            row.quoteOnFile ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-400 border-gray-200 hover:border-blue-300'
+          }`}
+        >Y</button>
+      </td>
+      <td className="py-2 px-2 text-center">
+        <button type="button" onClick={onRemove} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+      </td>
+    </tr>
+  );
+}
+
+// ─── Step definitions ─────────────────────────────────────────────────────────
+const STEPS = [
+  { id: 'basic',    label: 'Basic Info',           icon: '📋' },
+  { id: 'sectionA', label: 'Client Profile',        icon: '👤' },
+  { id: 'sectionB', label: 'Needs & Goals',         icon: '🎯' },
+  { id: 'sectionCD',label: 'Products & Advice',     icon: '✅' },
+  { id: 'sectionEF',label: 'Implementation',        icon: '🚀' },
+  { id: 'sectionGH',label: 'Fees & Declaration',    icon: '💰' },
+  { id: 'preview',  label: 'Preview & Print',       icon: '📄' },
+];
+
+function StepBar({ currentStep }) {
+  const currentIdx = STEPS.findIndex(s => s.id === currentStep);
+  return (
+    <div className="flex items-center gap-0 overflow-x-auto mb-8">
+      {STEPS.map((step, i) => {
+        const done   = i < currentIdx;
+        const active = step.id === currentStep;
+        return (
+          <div key={step.id} className="flex items-center flex-shrink-0">
+            <div className="flex flex-col items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 transition-all
+                ${done   ? 'bg-blue-600 border-blue-600 text-white'
+                : active ? 'bg-white border-blue-600 text-blue-600'
+                          : 'bg-white border-gray-200 text-gray-400'}`}>
+                {done ? '✓' : step.icon}
+              </div>
+              <span className={`text-xs mt-1 hidden sm:block whitespace-nowrap ${
+                active ? 'text-blue-700 font-semibold' : done ? 'text-blue-500' : 'text-gray-400'
+              }`}>{step.label}</span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className={`w-8 sm:w-10 h-0.5 mx-1 mb-5 ${done ? 'bg-blue-400' : 'bg-gray-200'}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Empty needs row ──────────────────────────────────────────────────────────
+const emptyNeed = () => ({ quantified: '', priority: '', addressed: '', shortfall: '', reviewDate: '' });
+
+// ─── Default state ────────────────────────────────────────────────────────────
+const defaultCarData = () => ({
+  clientName: '',
+  faName: '',
+  date: new Date().toLocaleDateString('en-ZA'),
+  referenceNumber: '',
+  contractNumber: '',
+
+  sectionA: {
+    clientNeedsObjectives: '',
+    financialSituation: '',
+    riskProfile: '',
+    productKnowledge: '',
+    investmentHorizon: '',
+    accessToCapital: '',
+    otherInformation: '',
+    amountToInvest: '',
+    investmentFrequency: '',
+  },
+
+  sectionB: {
+    // Pre-Retirement
+    retirementAnnuity:    emptyNeed(),
+    preservation:         emptyNeed(),
+    // Post-Retirement
+    livingAnnuity:        emptyNeed(),
+    fixedAnnuity:         emptyNeed(),
+    lifeAnnuity:          emptyNeed(),
+    guaranteedIncomePlan: emptyNeed(),
+    retirementIncomePlan: emptyNeed(),
+    // Savings
+    unitTrust:            emptyNeed(),
+    taxFree:              emptyNeed(),
+    endowment:            emptyNeed(),
+    flexible:             emptyNeed(),
+    guaranteedTerm:       emptyNeed(),
+    // Other
+    emergencyFund:        emptyNeed(),
+    educationPolicy:      emptyNeed(),
+    other:                emptyNeed(),
+  },
+
+  sectionC: [{ company: '', product: '', amount: '', fundFactSheet: false, quoteOnFile: false }],
+
+  sectionD: { productsRecommended: '', motivation: '' },
+  sectionE: { productsImplemented: '', rationale: '' },
+  sectionF: { importantInfo: '' },
+
+  sectionG: { upfront: '', ongoing: '' },
+
+  sectionH: {
+    notAcceptedProducts: '',
+    reasonsNotAccepted: '',
+    risksExisting: '',
+    consequencesExplained: '',
+    focusedNeed: '',
+  },
+});
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+export default function InvestmentCAR({ onComplete, advisorProfile, initialData }) {
+  const [step, setStep] = useState('basic');
+  const [carData, setCarData] = useState(() => initialData || defaultCarData());
+
+  const update = useCallback((updates) => setCarData(prev => ({ ...prev, ...updates })), []);
+  const updateA = useCallback((updates) => setCarData(prev => ({ ...prev, sectionA: { ...prev.sectionA, ...updates } })), []);
+  const updateD = useCallback((updates) => setCarData(prev => ({ ...prev, sectionD: { ...prev.sectionD, ...updates } })), []);
+  const updateE = useCallback((updates) => setCarData(prev => ({ ...prev, sectionE: { ...prev.sectionE, ...updates } })), []);
+  const updateF = useCallback((updates) => setCarData(prev => ({ ...prev, sectionF: { ...prev.sectionF, ...updates } })), []);
+  const updateG = useCallback((updates) => setCarData(prev => ({ ...prev, sectionG: { ...prev.sectionG, ...updates } })), []);
+  const updateH = useCallback((updates) => setCarData(prev => ({ ...prev, sectionH: { ...prev.sectionH, ...updates } })), []);
+
+  const updateNeed = useCallback((needKey, value) => {
+    setCarData(prev => ({ ...prev, sectionB: { ...prev.sectionB, [needKey]: value } }));
+  }, []);
+
+  const updateProductRow = useCallback((idx, value) => {
+    setCarData(prev => {
+      const rows = [...prev.sectionC];
+      rows[idx] = value;
+      return { ...prev, sectionC: rows };
+    });
+  }, []);
+
+  const addProductRow = useCallback(() => {
+    setCarData(prev => ({
+      ...prev,
+      sectionC: [...prev.sectionC, { company: '', product: '', amount: '', fundFactSheet: false, quoteOnFile: false }],
+    }));
+  }, []);
+
+  const removeProductRow = useCallback((idx) => {
+    setCarData(prev => ({ ...prev, sectionC: prev.sectionC.filter((_, i) => i !== idx) }));
+  }, []);
+
+  const goNext = () => {
+    const idx = STEPS.findIndex(s => s.id === step);
+    if (idx < STEPS.length - 1) setStep(STEPS[idx + 1].id);
+  };
+  const goBack = () => {
+    const idx = STEPS.findIndex(s => s.id === step);
+    if (idx > 0) setStep(STEPS[idx - 1].id);
+  };
+
+  const currentIdx = STEPS.findIndex(s => s.id === step);
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  return (
+    <div className="max-w-3xl mx-auto">
+      <div className="mb-4">
+        <h2 className="text-xl font-bold text-gray-800">Investment Client Advice Record</h2>
+        <p className="text-sm text-gray-400">Complete each section and use paragraph suggestions to build the advice record.</p>
+      </div>
+
+      <StepBar currentStep={step} />
+
+      {/* ── Step: Basic Info ── */}
+      {step === 'basic' && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <SectionHeading label="Record Header" sub="Client and advisor identification details" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Client Full Name *</label>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="e.g. John Smith"
+                value={carData.clientName}
+                onChange={e => update({ clientName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Financial Advisor</label>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder={advisorProfile?.advisorName || 'Advisor name'}
+                value={carData.faName}
+                onChange={e => update({ faName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Date</label>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={carData.date}
+                onChange={e => update({ date: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Reference Number</label>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="e.g. CAR-2026-001"
+                value={carData.referenceNumber}
+                onChange={e => update({ referenceNumber: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Contract / Application Number</label>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Insurer/provider contract number"
+                value={carData.contractNumber}
+                onChange={e => update({ contractNumber: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: Section A ── */}
+      {step === 'sectionA' && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <SectionHeading
+            label="Section A – Summary of Information obtained from the Client"
+            sub="Complete each field. Click '✦ suggestions' to insert pre-written paragraphs."
+          />
+
+          <TextFieldWithSuggestions
+            label="Client's Needs and Objectives"
+            hint="What are the client's needs and what does the client wish to achieve by purchasing this financial product?"
+            value={carData.sectionA.clientNeedsObjectives}
+            onChange={v => updateA({ clientNeedsObjectives: v })}
+            sectionKey="clientNeedsObjectives"
+            carData={carData}
+            rows={5}
+          />
+
+          <TextFieldWithSuggestions
+            label="Financial Situation"
+            hint="Set out a summary of the client's current financial situation."
+            value={carData.sectionA.financialSituation}
+            onChange={v => updateA({ financialSituation: v })}
+            sectionKey="financialSituation"
+            carData={carData}
+            rows={5}
+          />
+
+          {/* Risk Profile */}
+          <div className="mb-6">
+            <label className="text-sm font-semibold text-gray-700 block mb-2">Risk Profile</label>
+            <p className="text-xs text-gray-400 mb-3">Indicate the client's risk appetite as per the risk questionnaire.</p>
+            <div className="flex flex-wrap gap-2">
+              {['Conservative', 'Moderate Conservative', 'Moderate', 'Moderate Aggressive', 'Aggressive'].map(opt => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => updateA({ riskProfile: opt })}
+                  className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                    carData.sectionA.riskProfile === opt
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <TextFieldWithSuggestions
+            label="Product Knowledge and Experience"
+            hint="Describe the client's level of knowledge and experience of the product purchased."
+            value={carData.sectionA.productKnowledge}
+            onChange={v => updateA({ productKnowledge: v })}
+            sectionKey="productKnowledge"
+            carData={carData}
+            rows={4}
+          />
+
+          {/* Investment Horizon */}
+          <div className="mb-6">
+            <label className="text-sm font-semibold text-gray-700 block mb-2">Investment Horizon</label>
+            <p className="text-xs text-gray-400 mb-3">For how long the client expects their money to be invested before they would like to cash it in?</p>
+            <div className="flex flex-wrap gap-2">
+              {['0–2 Years', '2–5 Years', '5–9 Years', '10 Years+'].map(opt => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => updateA({ investmentHorizon: opt })}
+                  className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                    carData.sectionA.investmentHorizon === opt
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Access to Capital */}
+          <div className="mb-6">
+            <label className="text-sm font-semibold text-gray-700 block mb-2">Access to Capital</label>
+            <p className="text-xs text-gray-400 mb-3">The accessibility and liquidity of the investment.</p>
+            <div className="flex flex-wrap gap-2">
+              {['Need to draw an income', 'Always require access to capital', 'Do not require access to capital for 5 years'].map(opt => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => updateA({ accessToCapital: opt })}
+                  className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                    carData.sectionA.accessToCapital === opt
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <TextFieldWithSuggestions
+            label="Other Information"
+            hint="The client's retirement age, premium increase, expected growth rate, tax considerations, specific goals etc."
+            value={carData.sectionA.otherInformation}
+            onChange={v => updateA({ otherInformation: v })}
+            sectionKey="otherInformation"
+            carData={carData}
+            rows={4}
+          />
+
+          {/* Amount to invest */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Amount Available to be Invested</label>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="e.g. R500,000 lump sum / R5,000 p.m."
+                value={carData.sectionA.amountToInvest}
+                onChange={e => updateA({ amountToInvest: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Frequency</label>
+              <select
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={carData.sectionA.investmentFrequency}
+                onChange={e => updateA({ investmentFrequency: e.target.value })}
+              >
+                <option value="">Select…</option>
+                <option>Lump Sum</option>
+                <option>Monthly</option>
+                <option>Quarterly</option>
+                <option>Annually</option>
+                <option>Lump Sum + Monthly</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: Section B ── */}
+      {step === 'sectionB' && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <SectionHeading
+            label="Section B – Needs and Goals identified"
+            sub="For each need: enter the quantified amount, priority order, whether addressed (Y/N/P/L), shortfall, and review date."
+          />
+          <p className="text-xs text-gray-400 mb-4">Y = Yes (fully addressed) · N = No · P = Partially · L = Later</p>
+
+          <div className="overflow-x-auto -mx-2">
+            <table className="w-full text-sm min-w-[700px]">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="py-2 px-3 text-left text-xs font-semibold text-gray-600">Investment Need</th>
+                  <th className="py-2 px-3 text-left text-xs font-semibold text-gray-600">Needs Quantified</th>
+                  <th className="py-2 px-3 text-left text-xs font-semibold text-gray-600">Priority</th>
+                  <th className="py-2 px-3 text-left text-xs font-semibold text-gray-600">Addressed?</th>
+                  <th className="py-2 px-3 text-left text-xs font-semibold text-gray-600">Shortfall</th>
+                  <th className="py-2 px-3 text-left text-xs font-semibold text-gray-600">Review Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="bg-blue-50/60"><td colSpan={6} className="py-1.5 px-3 text-xs font-bold text-blue-700 uppercase tracking-wide">Pre-Retirement</td></tr>
+                <NeedsRow label="Retirement Annuity"     data={carData.sectionB.retirementAnnuity}    onChange={v => updateNeed('retirementAnnuity', v)} />
+                <NeedsRow label="Preservation"           data={carData.sectionB.preservation}          onChange={v => updateNeed('preservation', v)} />
+
+                <tr className="bg-blue-50/60"><td colSpan={6} className="py-1.5 px-3 text-xs font-bold text-blue-700 uppercase tracking-wide">Post-Retirement</td></tr>
+                <NeedsRow label="Living Annuity"         data={carData.sectionB.livingAnnuity}         onChange={v => updateNeed('livingAnnuity', v)} />
+                <NeedsRow label="Fixed Annuity"          data={carData.sectionB.fixedAnnuity}          onChange={v => updateNeed('fixedAnnuity', v)} />
+                <NeedsRow label="Life Annuity"           data={carData.sectionB.lifeAnnuity}           onChange={v => updateNeed('lifeAnnuity', v)} />
+                <NeedsRow label="Guaranteed Income Plan" data={carData.sectionB.guaranteedIncomePlan}  onChange={v => updateNeed('guaranteedIncomePlan', v)} />
+                <NeedsRow label="Retirement Income Plan" data={carData.sectionB.retirementIncomePlan}  onChange={v => updateNeed('retirementIncomePlan', v)} />
+
+                <tr className="bg-blue-50/60"><td colSpan={6} className="py-1.5 px-3 text-xs font-bold text-blue-700 uppercase tracking-wide">Savings</td></tr>
+                <NeedsRow label="Unit Trust"             data={carData.sectionB.unitTrust}             onChange={v => updateNeed('unitTrust', v)} />
+                <NeedsRow label="Tax Free"               data={carData.sectionB.taxFree}               onChange={v => updateNeed('taxFree', v)} />
+                <NeedsRow label="Endowment"              data={carData.sectionB.endowment}             onChange={v => updateNeed('endowment', v)} />
+                <NeedsRow label="Flexible"               data={carData.sectionB.flexible}              onChange={v => updateNeed('flexible', v)} />
+                <NeedsRow label="Guaranteed Term"        data={carData.sectionB.guaranteedTerm}        onChange={v => updateNeed('guaranteedTerm', v)} />
+
+                <tr className="bg-blue-50/60"><td colSpan={6} className="py-1.5 px-3 text-xs font-bold text-blue-700 uppercase tracking-wide">Other</td></tr>
+                <NeedsRow label="Emergency Fund"         data={carData.sectionB.emergencyFund}         onChange={v => updateNeed('emergencyFund', v)} />
+                <NeedsRow label="Education Policy"       data={carData.sectionB.educationPolicy}       onChange={v => updateNeed('educationPolicy', v)} />
+                <NeedsRow label="Other"                  data={carData.sectionB.other}                 onChange={v => updateNeed('other', v)} />
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: Sections C & D ── */}
+      {step === 'sectionCD' && (
+        <div className="space-y-6">
+          {/* Section C */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <SectionHeading
+              label="Section C – Products Considered"
+              sub="List all products for which quotes or fund fact sheets were obtained."
+            />
+            <div className="overflow-x-auto -mx-2">
+              <table className="w-full text-sm min-w-[640px]">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600">Company / Provider</th>
+                    <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600">Product</th>
+                    <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600">Premium / Amount</th>
+                    <th className="py-2 px-2 text-center text-xs font-semibold text-gray-600">Fund Fact Sheet</th>
+                    <th className="py-2 px-2 text-center text-xs font-semibold text-gray-600">Quote on File</th>
+                    <th className="py-2 px-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {carData.sectionC.map((row, idx) => (
+                    <ProductRow
+                      key={idx}
+                      row={row}
+                      onChange={v => updateProductRow(idx, v)}
+                      onRemove={() => removeProductRow(idx)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button
+              type="button"
+              onClick={addProductRow}
+              className="mt-3 text-xs text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors"
+            >
+              + Add product
+            </button>
+          </div>
+
+          {/* Section D */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <SectionHeading
+              label="Section D – Initial Recommendation / Advice"
+              sub="Ensure all needs identified in Section B are addressed."
+            />
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Product / Funds Recommended</label>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="e.g. Allan Gray Retirement Annuity – Balanced Fund"
+                value={carData.sectionD.productsRecommended}
+                onChange={e => updateD({ productsRecommended: e.target.value })}
+              />
+            </div>
+            <TextFieldWithSuggestions
+              label="Motivation for Recommendation"
+              hint="State why the product recommended will suit the client. Reference relevant information from Sections A and B."
+              value={carData.sectionD.motivation}
+              onChange={v => updateD({ motivation: v })}
+              sectionKey="recommendation"
+              carData={carData}
+              rows={8}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: Sections E & F ── */}
+      {step === 'sectionEF' && (
+        <div className="space-y-6">
+          {/* Section E */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <SectionHeading
+              label="Section E – Implementation Motivation"
+              sub="Explain what was finally implemented and the reasons thereof."
+            />
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-gray-600 block mb-1">Product / Funds Implemented</label>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="e.g. Allan Gray RA – Balanced Fund, R5,000 p.m."
+                value={carData.sectionE.productsImplemented}
+                onChange={e => updateE({ productsImplemented: e.target.value })}
+              />
+            </div>
+            <TextFieldWithSuggestions
+              label="Rationale for Product(s) Selected"
+              hint="State what was purchased, contribution pattern, and whether the need was fully or partially implemented. Where the client deviated from the recommendation, document this and the risks discussed."
+              value={carData.sectionE.rationale}
+              onChange={v => updateE({ rationale: v })}
+              sectionKey="implementation"
+              carData={carData}
+              rows={6}
+            />
+          </div>
+
+          {/* Section F */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <SectionHeading
+              label="Section F – Important Information highlighted to Client"
+              sub="e.g. Tax implications, liquidity, legislative restrictions, consequences of replacement, investment term, etc."
+            />
+            <TextFieldWithSuggestions
+              label="Important Information"
+              hint="Document all material information disclosed to the client."
+              value={carData.sectionF.importantInfo}
+              onChange={v => updateF({ importantInfo: v })}
+              sectionKey="importantInfo"
+              carData={carData}
+              rows={10}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: Sections G & H ── */}
+      {step === 'sectionGH' && (
+        <div className="space-y-6">
+          {/* Section G */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <SectionHeading
+              label="Section G – Fees"
+              sub="Disclosure of fees to the client in monetary value. Include all fees, charges, and advisor commission."
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Upfront Fees</label>
+                <textarea
+                  rows={5}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
+                  placeholder="e.g. Advisor initial fee: 1% = R5,000 (incl. VAT)&#10;Product upfront charge: Nil"
+                  value={carData.sectionG.upfront}
+                  onChange={e => updateG({ upfront: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Ongoing Fees (p.a.)</label>
+                <textarea
+                  rows={5}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
+                  placeholder="e.g. Platform admin fee: 0.50% p.a. = R2,500&#10;TER: 0.85% p.a.&#10;Advisor service fee: 0.575% p.a. (incl. VAT) = R2,875&#10;EAC: 1.93% p.a."
+                  value={carData.sectionG.ongoing}
+                  onChange={e => updateG({ ongoing: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section H */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <SectionHeading
+              label="Section H – Financial Advisor's Declaration"
+              sub="Complete where applicable. Leave blank if not relevant."
+            />
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">1. Products the client elected NOT to accept:</label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="Leave blank if all recommendations were accepted"
+                  value={carData.sectionH.notAcceptedProducts}
+                  onChange={e => updateH({ notAcceptedProducts: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">2. Reasons the client elected not to accept:</label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="e.g. Client preferred a lower monthly commitment"
+                  value={carData.sectionH.reasonsNotAccepted}
+                  onChange={e => updateH({ reasonsNotAccepted: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">3. Risks to the client for not concluding the recommended transaction:</label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="e.g. Underinsurance; retirement income shortfall"
+                  value={carData.sectionH.risksExisting}
+                  onChange={e => updateH({ risksExisting: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">4. Consequences thereof clearly explained to client?</label>
+                <div className="flex gap-3 mt-1">
+                  {['Yes', 'No', 'N/A'].map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => updateH({ consequencesExplained: opt })}
+                      className={`px-4 py-1.5 rounded-xl border text-sm font-medium transition-all ${
+                        carData.sectionH.consequencesExplained === opt
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">5. Where only a focused need is addressed — details discussed and agreed:</label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="Leave blank if a full financial needs analysis was conducted"
+                  value={carData.sectionH.focusedNeed}
+                  onChange={e => updateH({ focusedNeed: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: Preview ── */}
+      {step === 'preview' && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center">
+          <div className="text-4xl mb-3">📄</div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Ready to preview the advice record</h3>
+          <p className="text-sm text-gray-500 mb-6">All sections are complete. Click below to generate the full Investment Client Advice Record.</p>
+          <button
+            onClick={() => onComplete(carData)}
+            className="bg-blue-600 text-white rounded-xl px-8 py-3 font-semibold text-sm hover:bg-blue-700 transition-colors"
+          >
+            Generate Advice Record →
+          </button>
+        </div>
+      )}
+
+      {/* ── Navigation ── */}
+      <div className="flex items-center justify-between mt-6">
+        <button
+          type="button"
+          onClick={goBack}
+          disabled={currentIdx === 0}
+          className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          ← Back
+        </button>
+        <span className="text-xs text-gray-400 font-medium">
+          Step {currentIdx + 1} of {STEPS.length}
+        </span>
+        {step !== 'preview' && (
+          <button
+            type="button"
+            onClick={goNext}
+            className="bg-blue-600 text-white rounded-xl px-5 py-2 text-sm font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Next →
+          </button>
+        )}
+        {step === 'preview' && <div />}
+      </div>
+    </div>
+  );
+}

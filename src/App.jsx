@@ -25,6 +25,9 @@ import ProviderScoring from './modules/ProviderScoring.jsx';
 import FeeDisclosure   from './modules/FeeDisclosure.jsx';
 import ContentBuilder  from './modules/ContentBuilder.jsx';
 import ROADocument     from './modules/ROADocument.jsx';
+import InvestmentCAR         from './modules/InvestmentCAR.jsx';
+import InvestmentCARDocument from './modules/InvestmentCARDocument.jsx';
+import CARParagraphManager   from './admin/CARParagraphManager.jsx';
 import ParagraphManager  from './admin/ParagraphManager.jsx';
 import ProfileSettings   from './admin/ProfileSettings.jsx';
 import SavedROAsManager  from './admin/SavedROAsManager.jsx';
@@ -82,7 +85,58 @@ function StepBar({ currentStep, completedSteps }) {
 // MAIN APP
 // ══════════════════════════════════════════════════════════════════════════
 
+// ── Landing page shown when no ROA type is selected ───────────────────────────
+function LandingPage({ onSelect }) {
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+      <div className="max-w-2xl w-full">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 text-white font-bold text-2xl mb-4 shadow-lg">R</div>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">ROA Builder</h1>
+          <p className="text-gray-500 mt-2 text-sm">Select the type of advice record you want to create.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {/* Investment CAR */}
+          <button
+            onClick={() => onSelect('investmentCAR')}
+            className="group bg-white border-2 border-blue-200 rounded-2xl p-6 text-left hover:border-blue-500 hover:shadow-lg transition-all"
+          >
+            <div className="text-3xl mb-3">📋</div>
+            <h2 className="text-base font-bold text-gray-800 mb-1 group-hover:text-blue-700">Investment CAR</h2>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Investment Client Advice Record — Sections A–I per FAIS requirements.
+              Collect client info, select from pre-written paragraphs per field, and
+              compose the full advice record ready to sign.
+            </p>
+            <span className="inline-block mt-3 text-xs text-blue-600 font-semibold group-hover:underline">Start Investment CAR →</span>
+          </button>
+
+          {/* Standard ROA */}
+          <button
+            onClick={() => onSelect('standard')}
+            className="group bg-white border-2 border-gray-200 rounded-2xl p-6 text-left hover:border-blue-400 hover:shadow-lg transition-all"
+          >
+            <div className="text-3xl mb-3">📊</div>
+            <h2 className="text-base font-bold text-gray-800 mb-1 group-hover:text-blue-700">Standard ROA</h2>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Full investment ROA workflow — client profile, needs analysis,
+              product decision tree, provider scoring matrix, fee disclosure,
+              and 10-section content builder.
+            </p>
+            <span className="inline-block mt-3 text-xs text-blue-600 font-semibold group-hover:underline">Start Standard ROA →</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [roaType,           setRoaType]           = useState(null); // null | 'standard' | 'investmentCAR'
+  const [carData,           setCarData]           = useState(null);
+  const [showCARDoc,        setShowCARDoc]        = useState(false);
+  const [showCARParaManager,setShowCARParaManager]= useState(false);
   const [step,           setStep]           = useState('client');
   const [completedSteps, setCompleted]      = useState([]);
   const [roaData,        setRoaData]        = useState({
@@ -213,6 +267,70 @@ export default function App() {
 
   const productKey = roaData.providerResult?.productKey || roaData.treeResult?.productKey || 'unit trust';
 
+  // ── Landing page ────────────────────────────────────────────────────────
+  if (roaType === null) {
+    return (
+      <>
+        <LandingPage onSelect={(type) => setRoaType(type)} />
+        {showSettings && <ProfileSettings onClose={() => setShowSettings(false)} onChange={p => { setAdvisorProfile(p); saveProfile(p); }} />}
+      </>
+    );
+  }
+
+  // ── Investment CAR flow ─────────────────────────────────────────────────
+  if (roaType === 'investmentCAR') {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <nav className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+          <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">R</div>
+              <div className="hidden sm:block">
+                <p className="text-sm font-bold text-gray-800 leading-tight">ROA Builder</p>
+                <p className="text-xs text-gray-400 leading-tight">Investment CAR</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setRoaType(null); setCarData(null); setShowCARDoc(false); }}
+                className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
+              >
+                ← Home
+              </button>
+              <button
+                onClick={() => setShowCARParaManager(true)}
+                className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors hidden sm:block"
+              >
+                Paragraphs
+              </button>
+              <button onClick={() => setShowSettings(true)} className="text-xs bg-gray-800 text-white rounded-lg px-3 py-1.5 hover:bg-gray-700 transition-colors">
+                Settings
+              </button>
+            </div>
+          </div>
+        </nav>
+        <main className="max-w-5xl mx-auto px-4 py-8">
+          {!showCARDoc ? (
+            <InvestmentCAR
+              advisorProfile={advisorProfile}
+              initialData={carData}
+              onComplete={(data) => { setCarData(data); setShowCARDoc(true); }}
+            />
+          ) : (
+            <InvestmentCARDocument
+              carData={carData}
+              advisorProfile={advisorProfile}
+              onEdit={() => setShowCARDoc(false)}
+            />
+          )}
+        </main>
+        {showSettings        && <ProfileSettings      onClose={() => setShowSettings(false)}        onChange={p => { setAdvisorProfile(p); saveProfile(p); }} />}
+        {showCARParaManager  && <CARParagraphManager  onClose={() => setShowCARParaManager(false)} />}
+      </div>
+    );
+  }
+
+  // ── Standard ROA flow ───────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-100">
 
@@ -234,6 +352,12 @@ export default function App() {
           <div className="flex items-center gap-2">
             <button onClick={() => setShowSaved(true)} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
               Saved
+            </button>
+            <button
+              onClick={() => { setRoaType(null); }}
+              className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
+            >
+              ← Home
             </button>
             <button onClick={handleNewROA} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
               New ROA
