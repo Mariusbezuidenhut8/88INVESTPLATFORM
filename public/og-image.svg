@@ -3,71 +3,28 @@
   <!-- Background -->
   <rect width="1200" height="630" fill="#0f172a"/>
 
-  <!-- Subtle diagonal stripe texture -->
-  <defs>
-    <pattern id="stripes" width="40" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <rect width="1" height="40" fill="#1e293b" opacity="0.6"/>
-    </pattern>
-  </defs>
-  <rect width="1200" height="630" fill="url(#stripes)"/>
+  <!-- Blue top bar -->
+  <rect width="1200" height="8" fill="#2563eb"/>
+  <!-- Blue bottom bar -->
+  <rect y="622" width="1200" height="8" fill="#2563eb"/>
 
-  <!-- Top blue accent bar -->
-  <rect width="1200" height="6" fill="#2563eb"/>
+  <!-- Centered content (designed to survive square crop at center) -->
 
-  <!-- Left white card panel -->
-  <rect x="80" y="80" width="500" height="470" rx="16" fill="#ffffff" opacity="0.05"/>
+  <!-- Big R logo box — centered -->
+  <rect x="524" y="80" width="152" height="152" rx="24" fill="#2563eb"/>
+  <text x="600" y="190" font-family="Arial Black, Arial, sans-serif" font-size="96" font-weight="900" fill="white" text-anchor="middle">R</text>
 
-  <!-- Blue glow -->
-  <ellipse cx="1000" cy="400" rx="300" ry="250" fill="#2563eb" opacity="0.08"/>
-
-  <!-- R logo box -->
-  <rect x="80" y="120" width="72" height="72" rx="12" fill="#2563eb"/>
-  <text x="116" y="172" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="900" fill="white" text-anchor="middle">R</text>
-
-  <!-- Main title -->
-  <text x="80" y="255" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="58" font-weight="900" fill="#ffffff">Investment CAR</text>
-  <text x="80" y="325" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="58" font-weight="900" fill="#ffffff">Builder</text>
-
-  <!-- Tagline -->
-  <text x="80" y="385" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" fill="#94a3b8">Professional Client Advice Record</text>
-  <text x="80" y="420" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" fill="#94a3b8">for financial advisors</text>
+  <!-- App name — large, centered -->
+  <text x="600" y="310" font-family="Arial Black, Arial, sans-serif" font-size="72" font-weight="900" fill="#ffffff" text-anchor="middle">Investment CAR</text>
+  <text x="600" y="395" font-family="Arial Black, Arial, sans-serif" font-size="72" font-weight="900" fill="#ffffff" text-anchor="middle">Builder</text>
 
   <!-- Divider -->
-  <rect x="80" y="455" width="460" height="2" fill="#1e40af" opacity="0.6"/>
+  <rect x="400" y="420" width="400" height="3" rx="2" fill="#2563eb"/>
 
-  <!-- Feature tags -->
-  <rect x="80" y="475" width="140" height="36" rx="18" fill="#1e3a5f"/>
-  <text x="150" y="499" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#60a5fa" text-anchor="middle">Smart Paragraphs</text>
+  <!-- Tagline -->
+  <text x="600" y="468" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#94a3b8" text-anchor="middle">Professional Advice Record</text>
 
-  <rect x="234" y="475" width="170" height="36" rx="18" fill="#1e3a5f"/>
-  <text x="319" y="499" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#60a5fa" text-anchor="middle">Commission Builder</text>
-
-  <rect x="418" y="475" width="120" height="36" rx="18" fill="#1e3a5f"/>
-  <text x="478" y="499" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#60a5fa" text-anchor="middle">Print-Ready PDF</text>
-
-  <!-- Right side decorative document icon -->
-  <g transform="translate(780, 160)">
-    <rect width="240" height="300" rx="16" fill="#1e293b"/>
-    <rect width="240" height="300" rx="16" fill="#2563eb" opacity="0.15"/>
-    <!-- Lines -->
-    <rect x="30" y="50" width="180" height="12" rx="6" fill="#2563eb" opacity="0.8"/>
-    <rect x="30" y="80" width="140" height="8" rx="4" fill="#475569"/>
-    <rect x="30" y="100" width="160" height="8" rx="4" fill="#475569"/>
-    <rect x="30" y="120" width="120" height="8" rx="4" fill="#475569"/>
-    <rect x="30" y="155" width="180" height="12" rx="6" fill="#2563eb" opacity="0.8"/>
-    <rect x="30" y="185" width="150" height="8" rx="4" fill="#475569"/>
-    <rect x="30" y="205" width="130" height="8" rx="4" fill="#475569"/>
-    <rect x="30" y="225" width="160" height="8" rx="4" fill="#475569"/>
-    <!-- Checkmark badge -->
-    <circle cx="200" cy="260" r="28" fill="#22c55e"/>
-    <path d="M188 260 L197 269 L214 252" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  </g>
-
-  <!-- Bottom branding -->
-  <text x="80" y="590" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#475569" letter-spacing="3">FAIRBAIRN CONSULT</text>
-  <text x="1120" y="590" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#334155" text-anchor="end">FAIS Compliant · South Africa</text>
-
-  <!-- Bottom accent bar -->
-  <rect y="624" width="1200" height="6" fill="#2563eb"/>
+  <!-- Branding -->
+  <text x="600" y="570" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#475569" text-anchor="middle" letter-spacing="4">FAIRBAIRN CONSULT</text>
 
 </svg>
