@@ -52,13 +52,11 @@ const STEPS = [
 
 // ── Step progress bar ──────────────────────────────────────────────────────
 function StepBar({ currentStep, completedSteps }) {
-  const currentIdx = STEPS.findIndex(s => s.id === currentStep);
   return (
     <div className="flex items-center gap-0 overflow-x-auto pb-1">
       {STEPS.map((step, i) => {
         const done   = completedSteps.includes(step.id);
         const active = step.id === currentStep;
-        const future = i > currentIdx;
         return (
           <div key={step.id} className="flex items-center flex-shrink-0">
             <div className="flex flex-col items-center">
@@ -308,12 +306,12 @@ export default function App() {
                 <p className="text-xs text-gray-400 leading-tight">{session?.advisorName || 'Investment CAR'}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => { setRoaType(null); setCarData(null); setShowCARDoc(false); }} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">← Home</button>
-              <button onClick={() => setShowCARParaManager(true)} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors hidden sm:block">Paragraphs</button>
-              {session?.isAdmin && <button onClick={() => setShowAccessCodes(true)} className="text-xs text-amber-600 border border-amber-200 rounded-lg px-3 py-1.5 hover:bg-amber-50 transition-colors hidden sm:block">🔐 Codes</button>}
-              <button onClick={() => setShowSettings(true)} className="text-xs bg-gray-800 text-white rounded-lg px-3 py-1.5 hover:bg-gray-700 transition-colors">Settings</button>
-              <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">Sign out</button>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => { setRoaType(null); setCarData(null); setShowCARDoc(false); }} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 bg-white rounded-lg px-3 py-2 font-medium hover:bg-gray-50 transition-all">← Home</button>
+              <button onClick={() => setShowCARParaManager(true)} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 bg-white rounded-lg px-3 py-2 font-medium hover:bg-gray-50 transition-all hidden sm:block">Paragraphs</button>
+              {session?.isAdmin && <button onClick={() => setShowAccessCodes(true)} className="text-xs text-amber-700 border border-amber-200 bg-amber-50 rounded-lg px-3 py-2 font-medium hover:bg-amber-100 transition-all hidden sm:block">Codes</button>}
+              <button onClick={() => setShowSettings(true)} className="text-xs bg-blue-600 text-white rounded-lg px-3 py-2 font-semibold hover:bg-blue-700 shadow-sm shadow-blue-200 transition-all">Settings</button>
+              <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500 hover:border-red-200 border border-gray-200 bg-white rounded-lg px-3 py-2 font-medium transition-all">Sign out</button>
             </div>
           </div>
         </nav>

@@ -248,9 +248,12 @@ function CommissionSuggestionBanner({ sectionG, onAccept, onDismiss }) {
 // ─── Section heading ──────────────────────────────────────────────────────────
 function SectionHeading({ label, sub }) {
   return (
-    <div className="mb-5">
-      <h3 className="text-base font-bold text-gray-800">{label}</h3>
-      {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+    <div className="mb-6 pb-4 border-b border-gray-100 flex items-start gap-3">
+      <div className="w-1 h-10 rounded-full bg-blue-500 flex-shrink-0 mt-0.5" />
+      <div>
+        <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide leading-tight">{label}</h3>
+        {sub && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{sub}</p>}
+      </div>
     </div>
   );
 }
@@ -391,30 +394,46 @@ const STEPS = [
 
 function StepBar({ currentStep }) {
   const currentIdx = STEPS.findIndex(s => s.id === currentStep);
+  const pct = Math.round((currentIdx / (STEPS.length - 1)) * 100);
+
   return (
-    <div className="flex items-center gap-0 overflow-x-auto mb-8">
-      {STEPS.map((step, i) => {
-        const done   = i < currentIdx;
-        const active = step.id === currentStep;
-        return (
-          <div key={step.id} className="flex items-center flex-shrink-0">
-            <div className="flex flex-col items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 transition-all
-                ${done   ? 'bg-blue-600 border-blue-600 text-white'
-                : active ? 'bg-white border-blue-600 text-blue-600'
-                          : 'bg-white border-gray-200 text-gray-400'}`}>
-                {done ? '✓' : step.icon}
+    <div className="mb-8">
+      {/* Thin progress line */}
+      <div className="relative h-1 bg-gray-100 rounded-full mb-5 overflow-hidden">
+        <div
+          className="absolute left-0 top-0 h-full bg-blue-500 rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      {/* Step nodes */}
+      <div className="flex items-start justify-between">
+        {STEPS.map((step, i) => {
+          const done   = i < currentIdx;
+          const active = i === currentIdx;
+          return (
+            <div key={step.id} className="flex flex-col items-center gap-1.5" style={{ flex: 1 }}>
+              <div className={`
+                w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300
+                ${done   ? 'bg-blue-600 text-white shadow-md shadow-blue-200/60'
+                : active ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-md shadow-blue-200/60'
+                          : 'bg-gray-100 text-gray-400'}
+              `}>
+                {done ? (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 7l3.5 3.5L12 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : i + 1}
               </div>
-              <span className={`text-xs mt-1 hidden sm:block whitespace-nowrap ${
-                active ? 'text-blue-700 font-semibold' : done ? 'text-blue-500' : 'text-gray-400'
+              <span className={`text-center leading-tight hidden sm:block whitespace-nowrap text-xs transition-all duration-300 ${
+                active ? 'text-blue-700 font-semibold'
+                : done  ? 'text-gray-500 font-medium'
+                        : 'text-gray-300'
               }`}>{step.label}</span>
             </div>
-            {i < STEPS.length - 1 && (
-              <div className={`w-8 sm:w-10 h-0.5 mx-1 mb-5 ${done ? 'bg-blue-400' : 'bg-gray-200'}`} />
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -550,23 +569,28 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-4">
-        <h2 className="text-xl font-bold text-gray-800">Investment Client Advice Record</h2>
-        <p className="text-sm text-gray-400">Complete each section and use paragraph suggestions to build the advice record.</p>
+      <div className="mb-6 flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md shadow-blue-200">C</div>
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 tracking-tight leading-tight">Investment Client Advice Record</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Complete each section and use paragraph suggestions to build the advice record.</p>
+        </div>
       </div>
 
       <StepBar currentStep={step} />
 
+      <div key={step} className="step-enter">
+
       {/* ── Step: Basic Info ── */}
       {step === 'basic' && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
           <SectionHeading label="Record Header" sub="Client and advisor identification details" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-gray-600 block mb-1">Client Full Name *</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                 placeholder="e.g. John Smith"
                 value={carData.clientName}
                 onChange={e => update({ clientName: e.target.value })}
@@ -576,7 +600,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
               <label className="text-xs font-semibold text-gray-600 block mb-1">Financial Advisor</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                 placeholder={advisorProfile?.advisorName || 'Advisor name'}
                 value={carData.faName}
                 onChange={e => update({ faName: e.target.value })}
@@ -586,7 +610,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
               <label className="text-xs font-semibold text-gray-600 block mb-1">Date</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                 value={carData.date}
                 onChange={e => update({ date: e.target.value })}
               />
@@ -595,7 +619,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
               <label className="text-xs font-semibold text-gray-600 block mb-1">Reference Number</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                 placeholder="e.g. CAR-2026-001"
                 value={carData.referenceNumber}
                 onChange={e => update({ referenceNumber: e.target.value })}
@@ -605,7 +629,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
               <label className="text-xs font-semibold text-gray-600 block mb-1">Contract / Application Number</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                 placeholder="Insurer/provider contract number"
                 value={carData.contractNumber}
                 onChange={e => update({ contractNumber: e.target.value })}
@@ -617,7 +641,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
 
       {/* ── Step: Section A ── */}
       {step === 'sectionA' && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
           <SectionHeading
             label="Section A – Summary of Information obtained from the Client"
             sub="Complete each field. Click '✦ suggestions' to insert pre-written paragraphs."
@@ -735,7 +759,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
               <label className="text-xs font-semibold text-gray-600 block mb-1">Amount Available to be Invested</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                 placeholder="e.g. R500,000 lump sum / R5,000 p.m."
                 value={carData.sectionA.amountToInvest}
                 onChange={e => updateA({ amountToInvest: e.target.value })}
@@ -744,7 +768,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
             <div>
               <label className="text-xs font-semibold text-gray-600 block mb-1">Frequency</label>
               <select
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                 value={carData.sectionA.investmentFrequency}
                 onChange={e => updateA({ investmentFrequency: e.target.value })}
               >
@@ -762,7 +786,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
 
       {/* ── Step: Section B ── */}
       {step === 'sectionB' && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
           <SectionHeading
             label="Section B – Needs and Goals identified"
             sub="For each need: enter the quantified amount, priority order, whether addressed (Y/N/P/L), shortfall, and review date."
@@ -856,7 +880,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
           </div>
 
           {/* Section C */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
             <SectionHeading
               label="Section C – Products Considered"
               sub="List all products for which quotes or fund fact sheets were obtained."
@@ -895,7 +919,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
           </div>
 
           {/* Section D */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
             <SectionHeading
               label="Section D – Initial Recommendation / Advice"
               sub="Ensure all needs identified in Section B are addressed."
@@ -904,7 +928,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
               <label className="text-xs font-semibold text-gray-600 block mb-1">Product / Funds Recommended</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                 placeholder="e.g. Allan Gray Retirement Annuity – Balanced Fund"
                 value={carData.sectionD.productsRecommended}
                 onChange={e => updateD({ productsRecommended: e.target.value })}
@@ -935,7 +959,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
       {step === 'sectionEF' && (
         <div className="space-y-6">
           {/* Section E */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
             <SectionHeading
               label="Section E – Implementation Motivation"
               sub="Explain what was finally implemented and the reasons thereof."
@@ -944,7 +968,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
               <label className="text-xs font-semibold text-gray-600 block mb-1">Product / Funds Implemented</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                 placeholder="e.g. Allan Gray RA – Balanced Fund, R5,000 p.m."
                 value={carData.sectionE.productsImplemented}
                 onChange={e => updateE({ productsImplemented: e.target.value })}
@@ -962,7 +986,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
           </div>
 
           {/* Section F */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
             <SectionHeading
               label="Section F – Important Information highlighted to Client"
               sub="e.g. Tax implications, liquidity, legislative restrictions, consequences of replacement, investment term, etc."
@@ -984,7 +1008,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
       {step === 'sectionGH' && (
         <div className="space-y-6">
           {/* Section G */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
             <SectionHeading
               label="Section G – Fees & Commission Disclosure"
               sub="Disclosure of fees to the client in monetary value. Include all fees, charges, and advisor commission."
@@ -996,7 +1020,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
                 <label className="text-xs font-semibold text-gray-600 block mb-1">Upfront Fees (summary)</label>
                 <textarea
                   rows={4}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all resize-y"
                   placeholder="e.g. Advisor initial fee: 1% = R5,000 (incl. VAT)&#10;Product upfront charge: Nil"
                   value={carData.sectionG.upfront}
                   onChange={e => updateG({ upfront: e.target.value })}
@@ -1006,7 +1030,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
                 <label className="text-xs font-semibold text-gray-600 block mb-1">Ongoing Fees (p.a. summary)</label>
                 <textarea
                   rows={4}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all resize-y"
                   placeholder="e.g. Platform: 0.50% = R2,500&#10;TER: 0.85%&#10;Advisor: 0.575% = R2,875&#10;EAC: 1.93%"
                   value={carData.sectionG.ongoing}
                   onChange={e => updateG({ ongoing: e.target.value })}
@@ -1142,7 +1166,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
           </div>
 
           {/* Section H */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
             <SectionHeading
               label="Section H – Financial Advisor's Declaration"
               sub="Complete where applicable. Leave blank if not relevant."
@@ -1152,7 +1176,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
                 <label className="text-xs font-semibold text-gray-600 block mb-1">1. Products the client elected NOT to accept:</label>
                 <input
                   type="text"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                   placeholder="Leave blank if all recommendations were accepted"
                   value={carData.sectionH.notAcceptedProducts}
                   onChange={e => updateH({ notAcceptedProducts: e.target.value })}
@@ -1162,7 +1186,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
                 <label className="text-xs font-semibold text-gray-600 block mb-1">2. Reasons the client elected not to accept:</label>
                 <input
                   type="text"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                   placeholder="e.g. Client preferred a lower monthly commitment"
                   value={carData.sectionH.reasonsNotAccepted}
                   onChange={e => updateH({ reasonsNotAccepted: e.target.value })}
@@ -1172,7 +1196,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
                 <label className="text-xs font-semibold text-gray-600 block mb-1">3. Risks to the client for not concluding the recommended transaction:</label>
                 <input
                   type="text"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                   placeholder="e.g. Underinsurance; retirement income shortfall"
                   value={carData.sectionH.risksExisting}
                   onChange={e => updateH({ risksExisting: e.target.value })}
@@ -1201,7 +1225,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
                 <label className="text-xs font-semibold text-gray-600 block mb-1">5. Where only a focused need is addressed — details discussed and agreed:</label>
                 <input
                   type="text"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
                   placeholder="Leave blank if a full financial needs analysis was conducted"
                   value={carData.sectionH.focusedNeed}
                   onChange={e => updateH({ focusedNeed: e.target.value })}
@@ -1214,39 +1238,45 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
 
       {/* ── Step: Preview ── */}
       {step === 'preview' && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center">
-          <div className="text-4xl mb-3">📄</div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2">Ready to preview the advice record</h3>
-          <p className="text-sm text-gray-500 mb-6">All sections are complete. Click below to generate the full Investment Client Advice Record.</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-10 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Ready to generate the advice record</h3>
+          <p className="text-sm text-gray-500 mb-7 max-w-sm mx-auto leading-relaxed">All sections are complete. Click below to generate the full Investment Client Advice Record, ready to print and sign.</p>
           <button
             onClick={() => onComplete(carData)}
-            className="bg-blue-600 text-white rounded-xl px-8 py-3 font-semibold text-sm hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-white rounded-xl px-8 py-3 font-semibold text-sm hover:bg-blue-700 shadow-md shadow-blue-200 transition-all hover:shadow-lg hover:shadow-blue-300"
           >
             Generate Advice Record →
           </button>
         </div>
       )}
 
+      </div>{/* end step-enter wrapper */}
+
       {/* ── Navigation ── */}
-      <div className="flex items-center justify-between mt-6">
+      <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
         <button
           type="button"
           onClick={goBack}
           disabled={currentIdx === 0}
-          className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="text-sm text-gray-500 hover:text-gray-700 border border-gray-200 bg-white rounded-xl px-5 py-2.5 font-medium hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
         >
           ← Back
         </button>
-        <span className="text-xs text-gray-400 font-medium">
-          Step {currentIdx + 1} of {STEPS.length}
+        <span className="text-xs text-gray-400 font-semibold tracking-wide uppercase">
+          {currentIdx + 1} / {STEPS.length}
         </span>
         {step !== 'preview' && (
           <button
             type="button"
             onClick={goNext}
-            className="bg-blue-600 text-white rounded-xl px-5 py-2 text-sm font-semibold hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-white rounded-xl px-6 py-2.5 text-sm font-semibold hover:bg-blue-700 shadow-md shadow-blue-200/60 transition-all hover:shadow-lg"
           >
-            Next →
+            Continue →
           </button>
         )}
         {step === 'preview' && <div />}
