@@ -302,6 +302,79 @@ Replacement: [If applicable] The client was advised of the financial implication
 Investment Term: The client understands that the recommended product is intended as a [short / medium / long]-term investment and that early withdrawal may not achieve the desired investment objective.`,
     },
   ],
+
+  // ── Section G: Commission & Fee Disclosure ────────────────────────────────
+  commissionDisclosure: [
+    {
+      id: 'comm_initial_ongoing',
+      label: 'Initial + Ongoing commission (standard)',
+      tags: ['commission', 'initial', 'ongoing'],
+      text: `Fee Disclosure and Client Acceptance
+
+The following fees and commissions are payable in respect of the recommended financial product and have been fully disclosed to the client in monetary terms:
+
+Initial (Upfront) Fee: [Upfront %]% of the investment amount = R[Upfront R] ([incl./excl.] VAT).
+Ongoing Service Fee: [Ongoing %]% per annum of the fund value = approximately R[Ongoing R] per annum ([incl./excl.] VAT), reviewed annually.
+[Platform/Administration Fee: [Platform %]% per annum of the fund value.]
+Total Expense Ratio (TER): [TER]% per annum (as disclosed in the fund fact sheet).
+Effective Annual Cost (EAC): [EAC]% per annum.
+
+The client acknowledges that the above fees have been explained in full, that the client understands the nature and quantum of the fees, and that the client accepts the fees as fair and reasonable remuneration for the financial advice and ongoing service provided.
+
+The client further acknowledges that fees reduce investment returns and that the long-term impact of fees on the investment value has been explained. The client has been advised that the ongoing service fee may be cancelled at any time by written notice to the product provider.`,
+    },
+    {
+      id: 'comm_initial_only',
+      label: 'Initial commission only (lump sum / once-off)',
+      tags: ['commission', 'initial', 'lump_sum'],
+      text: `Fee Disclosure and Client Acceptance
+
+The following once-off fee is payable in respect of the recommended financial product and has been fully disclosed to the client:
+
+Initial (Upfront) Advisory Fee: [Upfront %]% of the investment amount = R[Upfront R] ([incl./excl.] VAT).
+No ongoing service fee is applicable to this transaction.
+[Platform/Administration Fee: [Platform %]% per annum of the fund value.]
+Total Expense Ratio (TER): [TER]% per annum (as disclosed in the fund fact sheet).
+
+The client acknowledges that the above once-off fee has been explained in full, that the client understands the nature and quantum of the fee, and that the client accepts it as fair and reasonable remuneration for the financial advice provided.`,
+    },
+    {
+      id: 'comm_ongoing_only',
+      label: 'Ongoing service fee only (no upfront)',
+      tags: ['commission', 'ongoing', 'service_fee'],
+      text: `Fee Disclosure and Client Acceptance
+
+No initial (upfront) advisory fee is charged in respect of this investment. The following ongoing service fee is payable and has been fully disclosed to the client:
+
+Ongoing Service Fee: [Ongoing %]% per annum of the fund value = approximately R[Ongoing R] per annum ([incl./excl.] VAT), reviewed annually on the policy anniversary.
+[Platform/Administration Fee: [Platform %]% per annum of the fund value.]
+Total Expense Ratio (TER): [TER]% per annum (as disclosed in the fund fact sheet).
+Effective Annual Cost (EAC): [EAC]% per annum.
+
+The client acknowledges that the ongoing service fee has been explained in full, including the services to be rendered in exchange for the fee (annual review, portfolio monitoring, advice, and administration). The client accepts the fee as fair and reasonable and understands that it may be cancelled at any time by written notice to the product provider.`,
+    },
+    {
+      id: 'comm_fee_based',
+      label: 'Fee for service (no commission)',
+      tags: ['fee_for_service', 'no_commission'],
+      text: `Fee Disclosure and Client Acceptance
+
+This transaction is conducted on a fee-for-service basis. No commission is earned by the financial advisor in respect of this product. The following advisor fee has been agreed upon and is payable by the client:
+
+Advisory Fee: R[Upfront R] ([incl./excl.] VAT) — payable as a [once-off / monthly deduction from the investment].
+[Ongoing Service Fee: R[Ongoing R] per annum ([incl./excl.] VAT), reviewed annually.]
+
+The client acknowledges that the above fees have been discussed and agreed upon prior to implementation, and that the client accepts the fees as fair and reasonable remuneration for the financial advice and service provided.`,
+    },
+    {
+      id: 'comm_nil',
+      label: 'No commission / no advisor fee',
+      tags: ['no_commission', 'nil'],
+      text: `Fee Disclosure
+
+No initial commission, ongoing service fee, or advisor fee is charged in respect of this investment. The client invests at the net asset value of the fund without any deduction for advisor remuneration. All applicable product costs (Total Expense Ratio, Transaction Costs, and any applicable platform fees) are disclosed in the fund fact sheet and have been explained to the client.`,
+    },
+  ],
 };
 
 /**
@@ -338,4 +411,5 @@ export const CAR_SECTION_LABELS = {
   recommendation:        'Recommendation (Section D)',
   implementation:        'Implementation (Section E)',
   importantInfo:         'Important Information (Section F)',
+  commissionDisclosure:  'Commission & Fee Disclosure (Section G)',
 };

@@ -360,8 +360,8 @@ export default function InvestmentCARDocument({ carData, advisorProfile, onEdit 
         </DocSection>
 
         {/* ── SECTION G ── */}
-        <DocSection title="Section G — Fees">
-          <div className="grid grid-cols-2 gap-0 border border-gray-200 rounded-lg overflow-hidden text-sm">
+        <DocSection title="Section G — Fees &amp; Commission Disclosure">
+          <div className="grid grid-cols-2 gap-0 border border-gray-200 rounded-lg overflow-hidden text-sm mb-4">
             <div className="p-4 border-r border-gray-200">
               <p className="text-xs font-semibold text-gray-500 mb-2">Upfront</p>
               <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{G.upfront || '—'}</p>
@@ -371,6 +371,12 @@ export default function InvestmentCARDocument({ carData, advisorProfile, onEdit 
               <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{G.ongoing || '—'}</p>
             </div>
           </div>
+          {G.commissionDisclosure && (
+            <div className="border border-gray-200 rounded-lg p-4">
+              <p className="text-xs font-semibold text-gray-500 mb-2">Commission Disclosure &amp; Client Acceptance</p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{G.commissionDisclosure}</p>
+            </div>
+          )}
         </DocSection>
 
         {/* ── SECTION H ── */}

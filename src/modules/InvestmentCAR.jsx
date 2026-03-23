@@ -186,6 +186,65 @@ function SmartSuggestionBanner({ productType, wrapper, onAccept, onDismiss }) {
   );
 }
 
+// ─── Commission paragraph builder ────────────────────────────────────────────
+const COMMISSION_PARA_MAP = {
+  initial_ongoing: 'comm_initial_ongoing',
+  initial_only:    'comm_initial_only',
+  ongoing_only:    'comm_ongoing_only',
+  fee_based:       'comm_fee_based',
+  nil:             'comm_nil',
+};
+
+function buildCommissionParagraph(sectionG) {
+  const { commissionType, upfrontPct, upfrontRand, ongoingPct, ongoingRand, vatRegistered } = sectionG;
+  const paraId = COMMISSION_PARA_MAP[commissionType];
+  if (!paraId) return null;
+  const base = (CAR_PARAGRAPHS.commissionDisclosure || []).find(p => p.id === paraId);
+  if (!base) return null;
+  const vat = vatRegistered || 'incl.';
+  const text = base.text
+    .replace(/\[Upfront %\]/g, upfrontPct   || '[Upfront %]')
+    .replace(/\[Upfront R\]/g, upfrontRand  || '[Upfront R]')
+    .replace(/\[Ongoing %\]/g, ongoingPct   || '[Ongoing %]')
+    .replace(/\[Ongoing R\]/g, ongoingRand  || '[Ongoing R]')
+    .replace(/\[incl\.\/excl\.\]/g, vat);
+  return { ...base, text };
+}
+
+function CommissionSuggestionBanner({ sectionG, onAccept, onDismiss }) {
+  const suggestion = buildCommissionParagraph(sectionG);
+  if (!suggestion) return null;
+  return (
+    <div className="mb-4 rounded-xl border-2 border-green-400 bg-green-50 p-4">
+      <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-green-700 font-bold text-sm">✦ Suggested Commission Disclosure</span>
+          <span className="text-xs bg-green-100 text-green-700 rounded-full px-2 py-0.5 font-medium">
+            {suggestion.label}
+          </span>
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => onAccept(suggestion.text)}
+            className="text-xs bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Accept
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="text-xs text-gray-400 hover:text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+      <p className="text-xs text-green-800 leading-relaxed line-clamp-5 italic whitespace-pre-line">{suggestion.text}</p>
+    </div>
+  );
+}
+
 // ─── Section heading ──────────────────────────────────────────────────────────
 function SectionHeading({ label, sub }) {
   return (
@@ -413,7 +472,17 @@ const defaultCarData = () => ({
   sectionE: { productsImplemented: '', rationale: '' },
   sectionF: { importantInfo: '' },
 
-  sectionG: { upfront: '', ongoing: '' },
+  sectionG: {
+    upfront: '',
+    ongoing: '',
+    commissionType: '',
+    upfrontPct: '',
+    upfrontRand: '',
+    ongoingPct: '',
+    ongoingRand: '',
+    vatRegistered: 'incl.',
+    commissionDisclosure: '',
+  },
 
   sectionH: {
     notAcceptedProducts: '',
@@ -429,11 +498,13 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
   const [step, setStep] = useState('basic');
   const [carData, setCarData] = useState(() => initialData || defaultCarData());
   const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+  const [commDismissed, setCommDismissed] = useState(false);
 
   const update = useCallback((updates) => setCarData(prev => ({ ...prev, ...updates })), []);
 
   // Reset dismissal whenever product type or wrapper changes so suggestion re-appears
   useEffect(() => { setSuggestionDismissed(false); }, [carData.productType, carData.wrapper]);
+  useEffect(() => { setCommDismissed(false); }, [carData.sectionG.commissionType]);
 
   const updateA = useCallback((updates) => setCarData(prev => ({ ...prev, sectionA: { ...prev.sectionA, ...updates } })), []);
   const updateD = useCallback((updates) => setCarData(prev => ({ ...prev, sectionD: { ...prev.sectionD, ...updates } })), []);
@@ -915,14 +986,16 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
           {/* Section G */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6">
             <SectionHeading
-              label="Section G – Fees"
+              label="Section G – Fees & Commission Disclosure"
               sub="Disclosure of fees to the client in monetary value. Include all fees, charges, and advisor commission."
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+            {/* ── Fee summary boxes ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">Upfront Fees</label>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Upfront Fees (summary)</label>
                 <textarea
-                  rows={5}
+                  rows={4}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
                   placeholder="e.g. Advisor initial fee: 1% = R5,000 (incl. VAT)&#10;Product upfront charge: Nil"
                   value={carData.sectionG.upfront}
@@ -930,15 +1003,141 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">Ongoing Fees (p.a.)</label>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Ongoing Fees (p.a. summary)</label>
                 <textarea
-                  rows={5}
+                  rows={4}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
-                  placeholder="e.g. Platform admin fee: 0.50% p.a. = R2,500&#10;TER: 0.85% p.a.&#10;Advisor service fee: 0.575% p.a. (incl. VAT) = R2,875&#10;EAC: 1.93% p.a."
+                  placeholder="e.g. Platform: 0.50% = R2,500&#10;TER: 0.85%&#10;Advisor: 0.575% = R2,875&#10;EAC: 1.93%"
                   value={carData.sectionG.ongoing}
                   onChange={e => updateG({ ongoing: e.target.value })}
                 />
               </div>
+            </div>
+
+            {/* ── Commission disclosure builder ── */}
+            <div className="border-t border-gray-100 pt-5">
+              <p className="text-sm font-bold text-gray-700 mb-3">Commission Disclosure Paragraph</p>
+              <p className="text-xs text-gray-400 mb-4">Select the commission structure, enter the amounts, and a compliant client-acceptance paragraph will be proposed for you.</p>
+
+              {/* Commission type */}
+              <div className="mb-4">
+                <label className="text-xs font-semibold text-gray-600 block mb-2">Commission / Fee Type</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'initial_ongoing', label: 'Initial + Ongoing' },
+                    { id: 'initial_only',    label: 'Initial only' },
+                    { id: 'ongoing_only',    label: 'Ongoing only' },
+                    { id: 'fee_based',       label: 'Fee for service' },
+                    { id: 'nil',             label: 'No commission' },
+                  ].map(opt => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => updateG({ commissionType: opt.id })}
+                      className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
+                        carData.sectionG.commissionType === opt.id
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Amount fields — only show when relevant */}
+              {['initial_ongoing', 'initial_only', 'fee_based'].includes(carData.sectionG.commissionType) && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">Upfront %</label>
+                    <input
+                      type="text"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="e.g. 1.00"
+                      value={carData.sectionG.upfrontPct}
+                      onChange={e => updateG({ upfrontPct: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">Upfront R</label>
+                    <input
+                      type="text"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="e.g. 5,000"
+                      value={carData.sectionG.upfrontRand}
+                      onChange={e => updateG({ upfrontRand: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {['initial_ongoing', 'ongoing_only'].includes(carData.sectionG.commissionType) && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">Ongoing % p.a.</label>
+                    <input
+                      type="text"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="e.g. 0.575"
+                      value={carData.sectionG.ongoingPct}
+                      onChange={e => updateG({ ongoingPct: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">Ongoing R p.a.</label>
+                    <input
+                      type="text"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="e.g. 2,875"
+                      value={carData.sectionG.ongoingRand}
+                      onChange={e => updateG({ ongoingRand: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {carData.sectionG.commissionType && carData.sectionG.commissionType !== 'nil' && (
+                <div className="mb-4">
+                  <label className="text-xs font-semibold text-gray-600 block mb-2">VAT</label>
+                  <div className="flex gap-2">
+                    {['incl.', 'excl.'].map(v => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => updateG({ vatRegistered: v })}
+                        className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
+                          carData.sectionG.vatRegistered === v
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                        }`}
+                      >
+                        {v} VAT
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Green suggestion banner */}
+              {!commDismissed && carData.sectionG.commissionType && (
+                <CommissionSuggestionBanner
+                  sectionG={carData.sectionG}
+                  onAccept={text => { updateG({ commissionDisclosure: text }); setCommDismissed(true); }}
+                  onDismiss={() => setCommDismissed(true)}
+                />
+              )}
+
+              {/* Commission disclosure text area */}
+              <TextFieldWithSuggestions
+                label="Commission Disclosure & Client Acceptance"
+                hint="This paragraph will appear in the printed CAR. Edit as needed."
+                value={carData.sectionG.commissionDisclosure}
+                onChange={v => updateG({ commissionDisclosure: v })}
+                sectionKey="commissionDisclosure"
+                carData={carData}
+                rows={10}
+              />
             </div>
           </div>
 
