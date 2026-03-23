@@ -88,43 +88,36 @@ function StepBar({ currentStep, completedSteps }) {
 // ── Landing page shown when no ROA type is selected ───────────────────────────
 function LandingPage({ onSelect }) {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6">
       <div className="max-w-2xl w-full">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 text-white font-bold text-2xl mb-4 shadow-lg">R</div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">ROA Builder</h1>
-          <p className="text-gray-500 mt-2 text-sm">Select the type of advice record you want to create.</p>
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded bg-[#0f172a] text-white font-bold text-2xl mb-5 shadow-xl">R</div>
+          <h1 className="text-4xl font-black text-[#0f172a] tracking-tight mb-2">ROA Builder</h1>
+          <p className="text-slate-500 text-base">Select the type of advice record you want to create.</p>
+          <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold mt-1">Fairbairn Consult</p>
         </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {/* Investment CAR */}
           <button
             onClick={() => onSelect('investmentCAR')}
-            className="group bg-white border-2 border-blue-200 rounded-2xl p-6 text-left hover:border-blue-500 hover:shadow-lg transition-all"
+            className="group bg-white border-2 border-slate-200 rounded-xl p-7 text-left hover:border-[#2563eb] hover:shadow-xl transition-all"
           >
-            <div className="text-3xl mb-3">📋</div>
-            <h2 className="text-base font-bold text-gray-800 mb-1 group-hover:text-blue-700">Investment CAR</h2>
-            <p className="text-xs text-gray-500 leading-relaxed">
-              Investment Client Advice Record — Sections A–I per FAIS requirements.
-              Collect client info, select from pre-written paragraphs per field, and
-              compose the full advice record ready to sign.
-            </p>
-            <span className="inline-block mt-3 text-xs text-blue-600 font-semibold group-hover:underline">Start Investment CAR →</span>
+            <div className="w-11 h-11 rounded bg-blue-50 flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <h2 className="text-base font-black text-[#0f172a] mb-2 tracking-tight">Investment CAR</h2>
+            <p className="text-xs text-slate-500 leading-relaxed">Investment Client Advice Record — Sections A–I per FAIS requirements. Smart paragraphs, commission disclosure, and print-ready PDFs.</p>
+            <span className="inline-block mt-4 text-xs text-[#2563eb] font-bold group-hover:underline">Start Investment CAR →</span>
           </button>
-
-          {/* Standard ROA */}
           <button
             onClick={() => onSelect('standard')}
-            className="group bg-white border-2 border-gray-200 rounded-2xl p-6 text-left hover:border-blue-400 hover:shadow-lg transition-all"
+            className="group bg-white border-2 border-slate-200 rounded-xl p-7 text-left hover:border-[#2563eb] hover:shadow-xl transition-all"
           >
-            <div className="text-3xl mb-3">📊</div>
-            <h2 className="text-base font-bold text-gray-800 mb-1 group-hover:text-blue-700">Standard ROA</h2>
-            <p className="text-xs text-gray-500 leading-relaxed">
-              Full investment ROA workflow — client profile, needs analysis,
-              product decision tree, provider scoring matrix, fee disclosure,
-              and 10-section content builder.
-            </p>
-            <span className="inline-block mt-3 text-xs text-blue-600 font-semibold group-hover:underline">Start Standard ROA →</span>
+            <div className="w-11 h-11 rounded bg-slate-50 flex items-center justify-center mb-4 group-hover:bg-slate-100 transition-colors">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <h2 className="text-base font-black text-[#0f172a] mb-2 tracking-tight">Standard ROA</h2>
+            <p className="text-xs text-slate-500 leading-relaxed">Full investment ROA workflow — client profile, needs analysis, product decision tree, provider scoring, fee disclosure, and content builder.</p>
+            <span className="inline-block mt-4 text-xs text-[#2563eb] font-bold group-hover:underline">Start Standard ROA →</span>
           </button>
         </div>
       </div>
@@ -296,26 +289,24 @@ export default function App() {
   // ── Investment CAR flow ─────────────────────────────────────────────────
   if (roaType === 'investmentCAR') {
     return (
-      <div className="min-h-screen bg-gray-100">
-        <nav className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
-          <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">R</div>
-              <div className="hidden sm:block">
-                <p className="text-sm font-bold text-gray-800 leading-tight">ROA Builder</p>
-                <p className="text-xs text-gray-400 leading-tight">{session?.advisorName || 'Investment CAR'}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button onClick={() => { setRoaType(null); setCarData(null); setShowCARDoc(false); }} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 bg-white rounded-lg px-3 py-2 font-medium hover:bg-gray-50 transition-all">← Home</button>
-              <button onClick={() => setShowCARParaManager(true)} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 bg-white rounded-lg px-3 py-2 font-medium hover:bg-gray-50 transition-all hidden sm:block">Paragraphs</button>
-              {session?.isAdmin && <button onClick={() => setShowAccessCodes(true)} className="text-xs text-amber-700 border border-amber-200 bg-amber-50 rounded-lg px-3 py-2 font-medium hover:bg-amber-100 transition-all hidden sm:block">Codes</button>}
-              <button onClick={() => setShowSettings(true)} className="text-xs bg-blue-600 text-white rounded-lg px-3 py-2 font-semibold hover:bg-blue-700 shadow-sm shadow-blue-200 transition-all">Settings</button>
-              <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500 hover:border-red-200 border border-gray-200 bg-white rounded-lg px-3 py-2 font-medium transition-all">Sign out</button>
+      <div className="min-h-screen bg-[#f8fafc]">
+        <header className="flex items-center justify-between px-6 sm:px-10 py-4 bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-[#0f172a] rounded shadow-md flex items-center justify-center text-white font-bold text-xl flex-shrink-0">R</div>
+            <div className="hidden sm:block">
+              <h1 className="font-bold text-[#0f172a] text-base tracking-tight leading-tight">ROA Builder</h1>
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Fairbairn Consult</p>
             </div>
           </div>
-        </nav>
-        <main className="max-w-5xl mx-auto px-4 py-8">
+          <nav className="flex items-center gap-2 sm:gap-6">
+            <button onClick={() => { setRoaType(null); setCarData(null); setShowCARDoc(false); }} className="text-sm font-semibold text-slate-500 hover:text-[#2563eb] transition-all">Home</button>
+            <button onClick={() => setShowCARParaManager(true)} className="text-sm font-semibold text-slate-500 hover:text-[#2563eb] transition-all hidden sm:block">Paragraphs</button>
+            {session?.isAdmin && <button onClick={() => setShowAccessCodes(true)} className="text-sm font-semibold text-amber-600 hover:text-amber-700 transition-all hidden sm:block">Codes</button>}
+            <button onClick={() => setShowSettings(true)} className="text-sm font-semibold text-slate-500 hover:text-[#2563eb] transition-all hidden sm:block">Settings</button>
+            <button onClick={handleLogout} className="bg-[#0f172a] text-white px-5 py-2 rounded text-sm font-bold hover:bg-slate-800 transition-all shadow-md active:scale-95">Sign out</button>
+          </nav>
+        </header>
+        <main className="max-w-4xl mx-auto py-10 px-4 sm:px-8">
           {!showCARDoc ? (
             <InvestmentCAR advisorProfile={advisorProfile} initialData={carData} onComplete={(data) => { setCarData(data); setShowCARDoc(true); }} />
           ) : (

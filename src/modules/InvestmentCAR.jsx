@@ -15,6 +15,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { ClipboardList, User, Target, CheckCircle, Zap, CreditCard, FileText, ChevronRight, Check } from 'lucide-react';
 import { getCARParagraphs, CAR_PARAGRAPHS } from '../data/investmentCARParagraphs.js';
 
 // ─── Smart suggestion map: productType → paragraph ID in 'recommendation' ─────
@@ -248,12 +249,9 @@ function CommissionSuggestionBanner({ sectionG, onAccept, onDismiss }) {
 // ─── Section heading ──────────────────────────────────────────────────────────
 function SectionHeading({ label, sub }) {
   return (
-    <div className="mb-6 pb-4 border-b border-gray-100 flex items-start gap-3">
-      <div className="w-1 h-10 rounded-full bg-blue-500 flex-shrink-0 mt-0.5" />
-      <div>
-        <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide leading-tight">{label}</h3>
-        {sub && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{sub}</p>}
-      </div>
+    <div className="bg-[#0f172a] -mx-7 -mt-7 px-8 py-4 mb-8 rounded-t-xl">
+      <h3 className="text-white font-bold text-xs tracking-widest uppercase">{label}</h3>
+      {sub && <p className="text-slate-400 text-xs mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -383,13 +381,13 @@ function ProductRow({ row, onChange, onRemove }) {
 
 // ─── Step definitions ─────────────────────────────────────────────────────────
 const STEPS = [
-  { id: 'basic',    label: 'Basic Info',           icon: '📋' },
-  { id: 'sectionA', label: 'Client Profile',        icon: '👤' },
-  { id: 'sectionB', label: 'Needs & Goals',         icon: '🎯' },
-  { id: 'sectionCD',label: 'Products & Advice',     icon: '✅' },
-  { id: 'sectionEF',label: 'Implementation',        icon: '🚀' },
-  { id: 'sectionGH',label: 'Fees & Declaration',    icon: '💰' },
-  { id: 'preview',  label: 'Preview & Print',       icon: '📄' },
+  { id: 'basic',     label: 'Basic Info',        Icon: ClipboardList },
+  { id: 'sectionA',  label: 'Client Profile',     Icon: User },
+  { id: 'sectionB',  label: 'Needs & Goals',      Icon: Target },
+  { id: 'sectionCD', label: 'Products & Advice',  Icon: CheckCircle },
+  { id: 'sectionEF', label: 'Implementation',     Icon: Zap },
+  { id: 'sectionGH', label: 'Fees & Declaration', Icon: CreditCard },
+  { id: 'preview',   label: 'Preview & Print',    Icon: FileText },
 ];
 
 function StepBar({ currentStep }) {
@@ -397,39 +395,38 @@ function StepBar({ currentStep }) {
   const pct = Math.round((currentIdx / (STEPS.length - 1)) * 100);
 
   return (
-    <div className="mb-8">
-      {/* Thin progress line */}
-      <div className="relative h-1 bg-gray-100 rounded-full mb-5 overflow-hidden">
+    <div className="mb-12">
+      <div className="flex items-center justify-between relative">
+        {/* Background line */}
+        <div className="absolute top-7 left-0 w-full h-[2px] bg-slate-200 -z-10" />
+        {/* Progress fill */}
         <div
-          className="absolute left-0 top-0 h-full bg-blue-500 rounded-full transition-all duration-500 ease-out"
+          className="absolute top-7 left-0 h-[2px] bg-[#2563eb] -z-10 transition-all duration-700 ease-out"
           style={{ width: `${pct}%` }}
         />
-      </div>
-
-      {/* Step nodes */}
-      <div className="flex items-start justify-between">
         {STEPS.map((step, i) => {
           const done   = i < currentIdx;
           const active = i === currentIdx;
+          const { Icon } = step;
           return (
-            <div key={step.id} className="flex flex-col items-center gap-1.5" style={{ flex: 1 }}>
+            <div key={step.id} className="flex flex-col items-center gap-2 bg-[#f8fafc] px-2 sm:px-4">
               <div className={`
-                w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300
-                ${done   ? 'bg-blue-600 text-white shadow-md shadow-blue-200/60'
-                : active ? 'bg-blue-600 text-white ring-4 ring-blue-100 shadow-md shadow-blue-200/60'
-                          : 'bg-gray-100 text-gray-400'}
+                w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 border-2
+                ${done
+                  ? 'bg-[#2563eb] border-[#2563eb] shadow-lg shadow-blue-200/60'
+                  : active
+                  ? 'bg-white border-[#2563eb] shadow-xl shadow-blue-100/80 ring-8 ring-blue-50'
+                  : 'bg-white border-slate-200 shadow-sm opacity-40'}
               `}>
-                {done ? (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M2 7l3.5 3.5L12 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                ) : i + 1}
+                {done
+                  ? <Check size={22} className="text-white" strokeWidth={2.5} />
+                  : <Icon size={22} className={active ? 'text-[#2563eb]' : 'text-slate-400'} strokeWidth={1.5} />
+                }
               </div>
-              <span className={`text-center leading-tight hidden sm:block whitespace-nowrap text-xs transition-all duration-300 ${
-                active ? 'text-blue-700 font-semibold'
-                : done  ? 'text-gray-500 font-medium'
-                        : 'text-gray-300'
-              }`}>{step.label}</span>
+              <span className={`
+                hidden sm:block text-[10px] font-black uppercase tracking-tighter text-center leading-tight
+                ${done ? 'text-[#2563eb]' : active ? 'text-[#0f172a]' : 'text-slate-400'}
+              `}>{i + 1}. {step.label}</span>
             </div>
           );
         })}
@@ -568,13 +565,10 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-6 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md shadow-blue-200">C</div>
-        <div>
-          <h2 className="text-lg font-bold text-gray-900 tracking-tight leading-tight">Investment Client Advice Record</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Complete each section and use paragraph suggestions to build the advice record.</p>
-        </div>
+    <div className="max-w-4xl mx-auto">
+      <div className="mb-10">
+        <h2 className="text-3xl font-black text-[#0f172a] mb-1 tracking-tight">Investment Client Advice Record</h2>
+        <p className="text-slate-500 text-base">Complete the professional advice journey below.</p>
       </div>
 
       <StepBar currentStep={step} />
@@ -583,57 +577,59 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
 
       {/* ── Step: Basic Info ── */}
       {step === 'basic' && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
+        <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
           <SectionHeading label="Record Header" sub="Client and advisor identification details" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-600 block mb-1">Client Full Name *</label>
-              <input
-                type="text"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                placeholder="e.g. John Smith"
-                value={carData.clientName}
-                onChange={e => update({ clientName: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-600 block mb-1">Financial Advisor</label>
-              <input
-                type="text"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                placeholder={advisorProfile?.advisorName || 'Advisor name'}
-                value={carData.faName}
-                onChange={e => update({ faName: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-600 block mb-1">Date</label>
-              <input
-                type="text"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                value={carData.date}
-                onChange={e => update({ date: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-600 block mb-1">Reference Number</label>
-              <input
-                type="text"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                placeholder="e.g. CAR-2026-001"
-                value={carData.referenceNumber}
-                onChange={e => update({ referenceNumber: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-600 block mb-1">Contract / Application Number</label>
-              <input
-                type="text"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                placeholder="Insurer/provider contract number"
-                value={carData.contractNumber}
-                onChange={e => update({ contractNumber: e.target.value })}
-              />
+          <div className="px-8 sm:px-10 pb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Client Full Name *</label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                  placeholder="e.g. John Smith"
+                  value={carData.clientName}
+                  onChange={e => update({ clientName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Financial Advisor</label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                  placeholder={advisorProfile?.advisorName || 'Advisor name'}
+                  value={carData.faName}
+                  onChange={e => update({ faName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Date</label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                  value={carData.date}
+                  onChange={e => update({ date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Reference Number</label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                  placeholder="e.g. CAR-2026-001"
+                  value={carData.referenceNumber}
+                  onChange={e => update({ referenceNumber: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Contract / Application Number</label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                  placeholder="Insurer/provider contract number"
+                  value={carData.contractNumber}
+                  onChange={e => update({ contractNumber: e.target.value })}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -641,11 +637,12 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
 
       {/* ── Step: Section A ── */}
       {step === 'sectionA' && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
+        <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
           <SectionHeading
             label="Section A – Summary of Information obtained from the Client"
             sub="Complete each field. Click '✦ suggestions' to insert pre-written paragraphs."
           />
+          <div className="px-8 sm:px-10 pb-10">
 
           <TextFieldWithSuggestions
             label="Client's Needs and Objectives"
@@ -755,20 +752,20 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
 
           {/* Amount to invest */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-600 block mb-1">Amount Available to be Invested</label>
+            <div className="space-y-2">
+              <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Amount Available to be Invested</label>
               <input
                 type="text"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
                 placeholder="e.g. R500,000 lump sum / R5,000 p.m."
                 value={carData.sectionA.amountToInvest}
                 onChange={e => updateA({ amountToInvest: e.target.value })}
               />
             </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-600 block mb-1">Frequency</label>
+            <div className="space-y-2">
+              <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Frequency</label>
               <select
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-sm text-[#0f172a]"
                 value={carData.sectionA.investmentFrequency}
                 onChange={e => updateA({ investmentFrequency: e.target.value })}
               >
@@ -781,16 +778,18 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
               </select>
             </div>
           </div>
+          </div>{/* end px-8 content wrapper */}
         </div>
       )}
 
       {/* ── Step: Section B ── */}
       {step === 'sectionB' && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
+        <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
           <SectionHeading
             label="Section B – Needs and Goals identified"
             sub="For each need: enter the quantified amount, priority order, whether addressed (Y/N/P/L), shortfall, and review date."
           />
+          <div className="px-8 sm:px-10 pb-10">
           <p className="text-xs text-gray-400 mb-4">Y = Yes (fully addressed) · N = No · P = Partially · L = Later</p>
 
           <div className="overflow-x-auto -mx-2">
@@ -831,6 +830,7 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
               </tbody>
             </table>
           </div>
+          </div>{/* end px-8 content wrapper */}
         </div>
       )}
 
@@ -839,118 +839,124 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
         <div className="space-y-6">
 
           {/* Product Type + Wrapper selector */}
-          <div className="bg-white rounded-2xl border border-green-200 p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-green-600 font-bold text-sm">✦ Smart Paragraph Assistant</span>
-              <span className="text-xs text-gray-400">Select product type and wrapper to get an auto-suggested paragraph</span>
+          <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
+            <div className="bg-[#0f172a] px-8 py-4 rounded-t-xl">
+              <h3 className="text-white font-bold text-xs tracking-widest uppercase">✦ Smart Paragraph Assistant</h3>
+              <p className="text-slate-400 text-xs mt-0.5">Select product type and wrapper to get an auto-suggested paragraph</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">Product Type</label>
-                <select
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-                  value={carData.productType}
-                  onChange={e => update({ productType: e.target.value })}
-                >
-                  <option value="">Select product type…</option>
-                  <option>Retirement Annuity</option>
-                  <option>Living Annuity</option>
-                  <option>Preservation Fund</option>
-                  <option>Unit Trust</option>
-                  <option>Tax-Free Savings Account</option>
-                  <option>Endowment</option>
-                  <option>Guaranteed Life Annuity</option>
-                  <option>Fixed Deposit</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">Wrapper</label>
-                <select
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-                  value={carData.wrapper}
-                  onChange={e => update({ wrapper: e.target.value })}
-                >
-                  <option value="">Select wrapper…</option>
-                  <option>Life (Long-term Insurance)</option>
-                  <option>Unit Trust / CIS (CISCA)</option>
-                  <option>Banking / Deposit</option>
-                </select>
+            <div className="px-8 sm:px-10 pb-8 pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Product Type</label>
+                  <select
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-sm text-[#0f172a]"
+                    value={carData.productType}
+                    onChange={e => update({ productType: e.target.value })}
+                  >
+                    <option value="">Select product type…</option>
+                    <option>Retirement Annuity</option>
+                    <option>Living Annuity</option>
+                    <option>Preservation Fund</option>
+                    <option>Unit Trust</option>
+                    <option>Tax-Free Savings Account</option>
+                    <option>Endowment</option>
+                    <option>Guaranteed Life Annuity</option>
+                    <option>Fixed Deposit</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Wrapper</label>
+                  <select
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-sm text-[#0f172a]"
+                    value={carData.wrapper}
+                    onChange={e => update({ wrapper: e.target.value })}
+                  >
+                    <option value="">Select wrapper…</option>
+                    <option>Life (Long-term Insurance)</option>
+                    <option>Unit Trust / CIS (CISCA)</option>
+                    <option>Banking / Deposit</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Section C */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
+          <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
             <SectionHeading
               label="Section C – Products Considered"
               sub="List all products for which quotes or fund fact sheets were obtained."
             />
-            <div className="overflow-x-auto -mx-2">
-              <table className="w-full text-sm min-w-[640px]">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600">Company / Provider</th>
-                    <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600">Product</th>
-                    <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600">Premium / Amount</th>
-                    <th className="py-2 px-2 text-center text-xs font-semibold text-gray-600">Fund Fact Sheet</th>
-                    <th className="py-2 px-2 text-center text-xs font-semibold text-gray-600">Quote on File</th>
-                    <th className="py-2 px-2"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {carData.sectionC.map((row, idx) => (
-                    <ProductRow
-                      key={idx}
-                      row={row}
-                      onChange={v => updateProductRow(idx, v)}
-                      onRemove={() => removeProductRow(idx)}
-                    />
-                  ))}
-                </tbody>
-              </table>
+            <div className="px-8 sm:px-10 pb-10">
+              <div className="overflow-x-auto -mx-2">
+                <table className="w-full text-sm min-w-[640px]">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600">Company / Provider</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600">Product</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600">Premium / Amount</th>
+                      <th className="py-2 px-2 text-center text-xs font-semibold text-gray-600">Fund Fact Sheet</th>
+                      <th className="py-2 px-2 text-center text-xs font-semibold text-gray-600">Quote on File</th>
+                      <th className="py-2 px-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {carData.sectionC.map((row, idx) => (
+                      <ProductRow
+                        key={idx}
+                        row={row}
+                        onChange={v => updateProductRow(idx, v)}
+                        onRemove={() => removeProductRow(idx)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <button
+                type="button"
+                onClick={addProductRow}
+                className="mt-3 text-xs text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors"
+              >
+                + Add product
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={addProductRow}
-              className="mt-3 text-xs text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors"
-            >
-              + Add product
-            </button>
           </div>
 
           {/* Section D */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
+          <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
             <SectionHeading
               label="Section D – Initial Recommendation / Advice"
               sub="Ensure all needs identified in Section B are addressed."
             />
-            <div className="mb-4">
-              <label className="text-xs font-semibold text-gray-600 block mb-1">Product / Funds Recommended</label>
-              <input
-                type="text"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                placeholder="e.g. Allan Gray Retirement Annuity – Balanced Fund"
-                value={carData.sectionD.productsRecommended}
-                onChange={e => updateD({ productsRecommended: e.target.value })}
+            <div className="px-8 sm:px-10 pb-10">
+              <div className="mb-4 space-y-2">
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Product / Funds Recommended</label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                  placeholder="e.g. Allan Gray Retirement Annuity – Balanced Fund"
+                  value={carData.sectionD.productsRecommended}
+                  onChange={e => updateD({ productsRecommended: e.target.value })}
+                />
+              </div>
+              {!suggestionDismissed && (
+                <SmartSuggestionBanner
+                  productType={carData.productType}
+                  wrapper={carData.wrapper}
+                  onAccept={text => { updateD({ motivation: applyTokens(text, carData) }); setSuggestionDismissed(true); }}
+                  onDismiss={() => setSuggestionDismissed(true)}
+                />
+              )}
+              <TextFieldWithSuggestions
+                label="Motivation for Recommendation"
+                hint="State why the product recommended will suit the client. Reference relevant information from Sections A and B."
+                value={carData.sectionD.motivation}
+                onChange={v => updateD({ motivation: v })}
+                sectionKey="recommendation"
+                carData={carData}
+                rows={8}
               />
             </div>
-            {!suggestionDismissed && (
-              <SmartSuggestionBanner
-                productType={carData.productType}
-                wrapper={carData.wrapper}
-                onAccept={text => { updateD({ motivation: applyTokens(text, carData) }); setSuggestionDismissed(true); }}
-                onDismiss={() => setSuggestionDismissed(true)}
-              />
-            )}
-            <TextFieldWithSuggestions
-              label="Motivation for Recommendation"
-              hint="State why the product recommended will suit the client. Reference relevant information from Sections A and B."
-              value={carData.sectionD.motivation}
-              onChange={v => updateD({ motivation: v })}
-              sectionKey="recommendation"
-              carData={carData}
-              rows={8}
-            />
           </div>
         </div>
       )}
@@ -959,47 +965,51 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
       {step === 'sectionEF' && (
         <div className="space-y-6">
           {/* Section E */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
+          <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
             <SectionHeading
               label="Section E – Implementation Motivation"
               sub="Explain what was finally implemented and the reasons thereof."
             />
-            <div className="mb-4">
-              <label className="text-xs font-semibold text-gray-600 block mb-1">Product / Funds Implemented</label>
-              <input
-                type="text"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                placeholder="e.g. Allan Gray RA – Balanced Fund, R5,000 p.m."
-                value={carData.sectionE.productsImplemented}
-                onChange={e => updateE({ productsImplemented: e.target.value })}
+            <div className="px-8 sm:px-10 pb-10">
+              <div className="mb-4 space-y-2">
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Product / Funds Implemented</label>
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                  placeholder="e.g. Allan Gray RA – Balanced Fund, R5,000 p.m."
+                  value={carData.sectionE.productsImplemented}
+                  onChange={e => updateE({ productsImplemented: e.target.value })}
+                />
+              </div>
+              <TextFieldWithSuggestions
+                label="Rationale for Product(s) Selected"
+                hint="State what was purchased, contribution pattern, and whether the need was fully or partially implemented. Where the client deviated from the recommendation, document this and the risks discussed."
+                value={carData.sectionE.rationale}
+                onChange={v => updateE({ rationale: v })}
+                sectionKey="implementation"
+                carData={carData}
+                rows={6}
               />
             </div>
-            <TextFieldWithSuggestions
-              label="Rationale for Product(s) Selected"
-              hint="State what was purchased, contribution pattern, and whether the need was fully or partially implemented. Where the client deviated from the recommendation, document this and the risks discussed."
-              value={carData.sectionE.rationale}
-              onChange={v => updateE({ rationale: v })}
-              sectionKey="implementation"
-              carData={carData}
-              rows={6}
-            />
           </div>
 
           {/* Section F */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
+          <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
             <SectionHeading
               label="Section F – Important Information highlighted to Client"
               sub="e.g. Tax implications, liquidity, legislative restrictions, consequences of replacement, investment term, etc."
             />
-            <TextFieldWithSuggestions
-              label="Important Information"
-              hint="Document all material information disclosed to the client."
-              value={carData.sectionF.importantInfo}
-              onChange={v => updateF({ importantInfo: v })}
-              sectionKey="importantInfo"
-              carData={carData}
-              rows={10}
-            />
+            <div className="px-8 sm:px-10 pb-10">
+              <TextFieldWithSuggestions
+                label="Important Information"
+                hint="Document all material information disclosed to the client."
+                value={carData.sectionF.importantInfo}
+                onChange={v => updateF({ importantInfo: v })}
+                sectionKey="importantInfo"
+                carData={carData}
+                rows={10}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -1008,228 +1018,231 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
       {step === 'sectionGH' && (
         <div className="space-y-6">
           {/* Section G */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
+          <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
             <SectionHeading
               label="Section G – Fees & Commission Disclosure"
               sub="Disclosure of fees to the client in monetary value. Include all fees, charges, and advisor commission."
             />
-
-            {/* ── Fee summary boxes ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">Upfront Fees (summary)</label>
-                <textarea
-                  rows={4}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all resize-y"
-                  placeholder="e.g. Advisor initial fee: 1% = R5,000 (incl. VAT)&#10;Product upfront charge: Nil"
-                  value={carData.sectionG.upfront}
-                  onChange={e => updateG({ upfront: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">Ongoing Fees (p.a. summary)</label>
-                <textarea
-                  rows={4}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all resize-y"
-                  placeholder="e.g. Platform: 0.50% = R2,500&#10;TER: 0.85%&#10;Advisor: 0.575% = R2,875&#10;EAC: 1.93%"
-                  value={carData.sectionG.ongoing}
-                  onChange={e => updateG({ ongoing: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* ── Commission disclosure builder ── */}
-            <div className="border-t border-gray-100 pt-5">
-              <p className="text-sm font-bold text-gray-700 mb-3">Commission Disclosure Paragraph</p>
-              <p className="text-xs text-gray-400 mb-4">Select the commission structure, enter the amounts, and a compliant client-acceptance paragraph will be proposed for you.</p>
-
-              {/* Commission type */}
-              <div className="mb-4">
-                <label className="text-xs font-semibold text-gray-600 block mb-2">Commission / Fee Type</label>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { id: 'initial_ongoing', label: 'Initial + Ongoing' },
-                    { id: 'initial_only',    label: 'Initial only' },
-                    { id: 'ongoing_only',    label: 'Ongoing only' },
-                    { id: 'fee_based',       label: 'Fee for service' },
-                    { id: 'nil',             label: 'No commission' },
-                  ].map(opt => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => updateG({ commissionType: opt.id })}
-                      className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
-                        carData.sectionG.commissionType === opt.id
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+            <div className="px-8 sm:px-10 pb-10">
+              {/* ── Fee summary boxes ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Upfront Fees (summary)</label>
+                  <textarea
+                    rows={4}
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a] resize-y"
+                    placeholder="e.g. Advisor initial fee: 1% = R5,000 (incl. VAT)&#10;Product upfront charge: Nil"
+                    value={carData.sectionG.upfront}
+                    onChange={e => updateG({ upfront: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Ongoing Fees (p.a. summary)</label>
+                  <textarea
+                    rows={4}
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a] resize-y"
+                    placeholder="e.g. Platform: 0.50% = R2,500&#10;TER: 0.85%&#10;Advisor: 0.575% = R2,875&#10;EAC: 1.93%"
+                    value={carData.sectionG.ongoing}
+                    onChange={e => updateG({ ongoing: e.target.value })}
+                  />
                 </div>
               </div>
 
-              {/* Amount fields — only show when relevant */}
-              {['initial_ongoing', 'initial_only', 'fee_based'].includes(carData.sectionG.commissionType) && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1">Upfront %</label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      placeholder="e.g. 1.00"
-                      value={carData.sectionG.upfrontPct}
-                      onChange={e => updateG({ upfrontPct: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1">Upfront R</label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      placeholder="e.g. 5,000"
-                      value={carData.sectionG.upfrontRand}
-                      onChange={e => updateG({ upfrontRand: e.target.value })}
-                    />
-                  </div>
-                </div>
-              )}
+              {/* ── Commission disclosure builder ── */}
+              <div className="border-t border-gray-100 pt-5">
+                <p className="text-sm font-bold text-gray-700 mb-3">Commission Disclosure Paragraph</p>
+                <p className="text-xs text-gray-400 mb-4">Select the commission structure, enter the amounts, and a compliant client-acceptance paragraph will be proposed for you.</p>
 
-              {['initial_ongoing', 'ongoing_only'].includes(carData.sectionG.commissionType) && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1">Ongoing % p.a.</label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      placeholder="e.g. 0.575"
-                      value={carData.sectionG.ongoingPct}
-                      onChange={e => updateG({ ongoingPct: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1">Ongoing R p.a.</label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      placeholder="e.g. 2,875"
-                      value={carData.sectionG.ongoingRand}
-                      onChange={e => updateG({ ongoingRand: e.target.value })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {carData.sectionG.commissionType && carData.sectionG.commissionType !== 'nil' && (
+                {/* Commission type */}
                 <div className="mb-4">
-                  <label className="text-xs font-semibold text-gray-600 block mb-2">VAT</label>
-                  <div className="flex gap-2">
-                    {['incl.', 'excl.'].map(v => (
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest mb-2">Commission / Fee Type</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'initial_ongoing', label: 'Initial + Ongoing' },
+                      { id: 'initial_only',    label: 'Initial only' },
+                      { id: 'ongoing_only',    label: 'Ongoing only' },
+                      { id: 'fee_based',       label: 'Fee for service' },
+                      { id: 'nil',             label: 'No commission' },
+                    ].map(opt => (
                       <button
-                        key={v}
+                        key={opt.id}
                         type="button"
-                        onClick={() => updateG({ vatRegistered: v })}
+                        onClick={() => updateG({ commissionType: opt.id })}
                         className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
-                          carData.sectionG.vatRegistered === v
-                            ? 'bg-blue-600 text-white border-blue-600'
+                          carData.sectionG.commissionType === opt.id
+                            ? 'bg-[#2563eb] text-white border-[#2563eb]'
                             : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
                         }`}
                       >
-                        {v} VAT
+                        {opt.label}
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* Green suggestion banner */}
-              {!commDismissed && carData.sectionG.commissionType && (
-                <CommissionSuggestionBanner
-                  sectionG={carData.sectionG}
-                  onAccept={text => { updateG({ commissionDisclosure: text }); setCommDismissed(true); }}
-                  onDismiss={() => setCommDismissed(true)}
+                {/* Amount fields — only show when relevant */}
+                {['initial_ongoing', 'initial_only', 'fee_based'].includes(carData.sectionG.commissionType) && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    <div className="space-y-2">
+                      <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Upfront %</label>
+                      <input
+                        type="text"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                        placeholder="e.g. 1.00"
+                        value={carData.sectionG.upfrontPct}
+                        onChange={e => updateG({ upfrontPct: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Upfront R</label>
+                      <input
+                        type="text"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                        placeholder="e.g. 5,000"
+                        value={carData.sectionG.upfrontRand}
+                        onChange={e => updateG({ upfrontRand: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {['initial_ongoing', 'ongoing_only'].includes(carData.sectionG.commissionType) && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    <div className="space-y-2">
+                      <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Ongoing % p.a.</label>
+                      <input
+                        type="text"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                        placeholder="e.g. 0.575"
+                        value={carData.sectionG.ongoingPct}
+                        onChange={e => updateG({ ongoingPct: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">Ongoing R p.a.</label>
+                      <input
+                        type="text"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                        placeholder="e.g. 2,875"
+                        value={carData.sectionG.ongoingRand}
+                        onChange={e => updateG({ ongoingRand: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {carData.sectionG.commissionType && carData.sectionG.commissionType !== 'nil' && (
+                  <div className="mb-4">
+                    <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest mb-2">VAT</label>
+                    <div className="flex gap-2">
+                      {['incl.', 'excl.'].map(v => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => updateG({ vatRegistered: v })}
+                          className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
+                            carData.sectionG.vatRegistered === v
+                              ? 'bg-[#2563eb] text-white border-[#2563eb]'
+                              : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                          }`}
+                        >
+                          {v} VAT
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Green suggestion banner */}
+                {!commDismissed && carData.sectionG.commissionType && (
+                  <CommissionSuggestionBanner
+                    sectionG={carData.sectionG}
+                    onAccept={text => { updateG({ commissionDisclosure: text }); setCommDismissed(true); }}
+                    onDismiss={() => setCommDismissed(true)}
+                  />
+                )}
+
+                {/* Commission disclosure text area */}
+                <TextFieldWithSuggestions
+                  label="Commission Disclosure & Client Acceptance"
+                  hint="This paragraph will appear in the printed CAR. Edit as needed."
+                  value={carData.sectionG.commissionDisclosure}
+                  onChange={v => updateG({ commissionDisclosure: v })}
+                  sectionKey="commissionDisclosure"
+                  carData={carData}
+                  rows={10}
                 />
-              )}
-
-              {/* Commission disclosure text area */}
-              <TextFieldWithSuggestions
-                label="Commission Disclosure & Client Acceptance"
-                hint="This paragraph will appear in the printed CAR. Edit as needed."
-                value={carData.sectionG.commissionDisclosure}
-                onChange={v => updateG({ commissionDisclosure: v })}
-                sectionKey="commissionDisclosure"
-                carData={carData}
-                rows={10}
-              />
+              </div>
             </div>
           </div>
 
           {/* Section H */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-7">
+          <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
             <SectionHeading
               label="Section H – Financial Advisor's Declaration"
               sub="Complete where applicable. Leave blank if not relevant."
             />
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">1. Products the client elected NOT to accept:</label>
-                <input
-                  type="text"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                  placeholder="Leave blank if all recommendations were accepted"
-                  value={carData.sectionH.notAcceptedProducts}
-                  onChange={e => updateH({ notAcceptedProducts: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">2. Reasons the client elected not to accept:</label>
-                <input
-                  type="text"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                  placeholder="e.g. Client preferred a lower monthly commitment"
-                  value={carData.sectionH.reasonsNotAccepted}
-                  onChange={e => updateH({ reasonsNotAccepted: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">3. Risks to the client for not concluding the recommended transaction:</label>
-                <input
-                  type="text"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                  placeholder="e.g. Underinsurance; retirement income shortfall"
-                  value={carData.sectionH.risksExisting}
-                  onChange={e => updateH({ risksExisting: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">4. Consequences thereof clearly explained to client?</label>
-                <div className="flex gap-3 mt-1">
-                  {['Yes', 'No', 'N/A'].map(opt => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => updateH({ consequencesExplained: opt })}
-                      className={`px-4 py-1.5 rounded-xl border text-sm font-medium transition-all ${
-                        carData.sectionH.consequencesExplained === opt
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+            <div className="px-8 sm:px-10 pb-10">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">1. Products the client elected NOT to accept:</label>
+                  <input
+                    type="text"
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                    placeholder="Leave blank if all recommendations were accepted"
+                    value={carData.sectionH.notAcceptedProducts}
+                    onChange={e => updateH({ notAcceptedProducts: e.target.value })}
+                  />
                 </div>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">5. Where only a focused need is addressed — details discussed and agreed:</label>
-                <input
-                  type="text"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-                  placeholder="Leave blank if a full financial needs analysis was conducted"
-                  value={carData.sectionH.focusedNeed}
-                  onChange={e => updateH({ focusedNeed: e.target.value })}
-                />
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">2. Reasons the client elected not to accept:</label>
+                  <input
+                    type="text"
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                    placeholder="e.g. Client preferred a lower monthly commitment"
+                    value={carData.sectionH.reasonsNotAccepted}
+                    onChange={e => updateH({ reasonsNotAccepted: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">3. Risks to the client for not concluding the recommended transaction:</label>
+                  <input
+                    type="text"
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                    placeholder="e.g. Underinsurance; retirement income shortfall"
+                    value={carData.sectionH.risksExisting}
+                    onChange={e => updateH({ risksExisting: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest mb-2">4. Consequences thereof clearly explained to client?</label>
+                  <div className="flex gap-3 mt-1">
+                    {['Yes', 'No', 'N/A'].map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => updateH({ consequencesExplained: opt })}
+                        className={`px-4 py-1.5 rounded-xl border text-sm font-medium transition-all ${
+                          carData.sectionH.consequencesExplained === opt
+                            ? 'bg-[#2563eb] text-white border-[#2563eb]'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-widest">5. Where only a focused need is addressed — details discussed and agreed:</label>
+                  <input
+                    type="text"
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded focus:bg-white focus:border-[#2563eb] focus:ring-4 focus:ring-blue-50 outline-none transition-all placeholder:text-slate-300 font-medium text-sm text-[#0f172a]"
+                    placeholder="Leave blank if a full financial needs analysis was conducted"
+                    value={carData.sectionH.focusedNeed}
+                    onChange={e => updateH({ focusedNeed: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1238,45 +1251,48 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
 
       {/* ── Step: Preview ── */}
       {step === 'preview' && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm shadow-gray-200/60 p-10 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-            </svg>
+        <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
+          <div className="bg-[#0f172a] px-10 py-4">
+            <h3 className="text-white font-bold text-xs tracking-widest uppercase">Ready to Generate</h3>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-2">Ready to generate the advice record</h3>
-          <p className="text-sm text-gray-500 mb-7 max-w-sm mx-auto leading-relaxed">All sections are complete. Click below to generate the full Investment Client Advice Record, ready to print and sign.</p>
-          <button
-            onClick={() => onComplete(carData)}
-            className="bg-blue-600 text-white rounded-xl px-8 py-3 font-semibold text-sm hover:bg-blue-700 shadow-md shadow-blue-200 transition-all hover:shadow-lg hover:shadow-blue-300"
-          >
-            Generate Advice Record →
-          </button>
+          <div className="p-10 sm:p-14 text-center">
+            <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-5">
+              <FileText size={30} className="text-[#2563eb]" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-2xl font-black text-[#0f172a] mb-2">Ready to generate the advice record</h3>
+            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">All sections complete. Generate the full Investment Client Advice Record — ready to print and sign.</p>
+            <button
+              onClick={() => onComplete(carData)}
+              className="bg-[#2563eb] text-white rounded px-10 py-4 font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 active:scale-95 inline-flex items-center gap-2"
+            >
+              Generate Advice Record <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
       )}
 
       </div>{/* end step-enter wrapper */}
 
       {/* ── Navigation ── */}
-      <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+      <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-100">
         <button
           type="button"
           onClick={goBack}
           disabled={currentIdx === 0}
-          className="text-sm text-gray-500 hover:text-gray-700 border border-gray-200 bg-white rounded-xl px-5 py-2.5 font-medium hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          className="text-sm font-bold text-slate-500 hover:text-[#0f172a] border border-slate-200 bg-white rounded px-6 py-3 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
         >
           ← Back
         </button>
-        <span className="text-xs text-gray-400 font-semibold tracking-wide uppercase">
-          {currentIdx + 1} / {STEPS.length}
+        <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+          Step {currentIdx + 1} of {STEPS.length}
         </span>
         {step !== 'preview' && (
           <button
             type="button"
             onClick={goNext}
-            className="bg-blue-600 text-white rounded-xl px-6 py-2.5 text-sm font-semibold hover:bg-blue-700 shadow-md shadow-blue-200/60 transition-all hover:shadow-lg"
+            className="bg-[#2563eb] text-white rounded px-8 py-3 text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 active:scale-95 flex items-center gap-2"
           >
-            Continue →
+            Save & Continue <ChevronRight size={16} />
           </button>
         )}
         {step === 'preview' && <div />}
