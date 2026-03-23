@@ -1,65 +1,73 @@
 <svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+
   <!-- Background -->
   <rect width="1200" height="630" fill="#0f172a"/>
 
-  <!-- Subtle grid pattern -->
+  <!-- Subtle diagonal stripe texture -->
   <defs>
-    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1e293b" stroke-width="1"/>
+    <pattern id="stripes" width="40" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="1" height="40" fill="#1e293b" opacity="0.6"/>
     </pattern>
   </defs>
-  <rect width="1200" height="630" fill="url(#grid)" opacity="0.6"/>
+  <rect width="1200" height="630" fill="url(#stripes)"/>
 
-  <!-- Blue glow blobs -->
-  <ellipse cx="200" cy="150" rx="300" ry="200" fill="#1d4ed8" opacity="0.12"/>
-  <ellipse cx="1050" cy="500" rx="250" ry="180" fill="#3b82f6" opacity="0.10"/>
+  <!-- Top blue accent bar -->
+  <rect width="1200" height="6" fill="#2563eb"/>
 
-  <!-- Top accent bar -->
-  <rect width="1200" height="5" fill="#3b82f6"/>
+  <!-- Left white card panel -->
+  <rect x="80" y="80" width="500" height="470" rx="16" fill="#ffffff" opacity="0.05"/>
 
-  <!-- Left side vertical accent -->
-  <rect x="80" y="160" width="5" height="310" rx="3" fill="#3b82f6" opacity="0.8"/>
+  <!-- Blue glow -->
+  <ellipse cx="1000" cy="400" rx="300" ry="250" fill="#2563eb" opacity="0.08"/>
 
-  <!-- Document icon -->
-  <g transform="translate(110, 185)">
-    <rect width="64" height="80" rx="6" fill="#1e40af" opacity="0.9"/>
-    <rect x="10" y="18" width="44" height="4" rx="2" fill="#93c5fd"/>
-    <rect x="10" y="30" width="44" height="4" rx="2" fill="#93c5fd" opacity="0.7"/>
-    <rect x="10" y="42" width="32" height="4" rx="2" fill="#93c5fd" opacity="0.5"/>
-    <rect x="10" y="54" width="38" height="4" rx="2" fill="#93c5fd" opacity="0.4"/>
-    <!-- Checkmark badge -->
-    <circle cx="54" cy="12" r="14" fill="#22c55e"/>
-    <path d="M47 12 L52 17 L62 7" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  </g>
+  <!-- R logo box -->
+  <rect x="80" y="120" width="72" height="72" rx="12" fill="#2563eb"/>
+  <text x="116" y="172" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="900" fill="white" text-anchor="middle">R</text>
 
-  <!-- App name -->
-  <text x="200" y="255" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="68" font-weight="800" fill="#f8fafc" letter-spacing="-1">Investment CAR Builder</text>
+  <!-- Main title -->
+  <text x="80" y="255" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="58" font-weight="900" fill="#ffffff">Investment CAR</text>
+  <text x="80" y="325" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="58" font-weight="900" fill="#ffffff">Builder</text>
 
   <!-- Tagline -->
-  <text x="200" y="320" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="30" font-weight="400" fill="#94a3b8">Professional Client Advice Record — built for advisors</text>
+  <text x="80" y="385" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" fill="#94a3b8">Professional Client Advice Record</text>
+  <text x="80" y="420" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" fill="#94a3b8">for financial advisors</text>
 
   <!-- Divider -->
-  <rect x="200" y="360" width="800" height="1.5" fill="#1e293b"/>
+  <rect x="80" y="455" width="460" height="2" fill="#1e40af" opacity="0.6"/>
 
-  <!-- Feature pills -->
-  <g transform="translate(200, 385)">
-    <!-- Pill 1 -->
-    <rect width="190" height="44" rx="22" fill="#1e3a5f"/>
-    <text x="95" y="28" font-family="ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="600" fill="#60a5fa" text-anchor="middle">✦ Smart Paragraphs</text>
+  <!-- Feature tags -->
+  <rect x="80" y="475" width="140" height="36" rx="18" fill="#1e3a5f"/>
+  <text x="150" y="499" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#60a5fa" text-anchor="middle">Smart Paragraphs</text>
 
-    <!-- Pill 2 -->
-    <rect x="210" width="210" height="44" rx="22" fill="#1e3a5f"/>
-    <text x="315" y="28" font-family="ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="600" fill="#60a5fa" text-anchor="middle">✦ Commission Disclosure</text>
+  <rect x="234" y="475" width="170" height="36" rx="18" fill="#1e3a5f"/>
+  <text x="319" y="499" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#60a5fa" text-anchor="middle">Commission Builder</text>
 
-    <!-- Pill 3 -->
-    <rect x="440" width="170" height="44" rx="22" fill="#1e3a5f"/>
-    <text x="525" y="28" font-family="ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="600" fill="#60a5fa" text-anchor="middle">✦ Print-Ready PDF</text>
+  <rect x="418" y="475" width="120" height="36" rx="18" fill="#1e3a5f"/>
+  <text x="478" y="499" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#60a5fa" text-anchor="middle">Print-Ready PDF</text>
+
+  <!-- Right side decorative document icon -->
+  <g transform="translate(780, 160)">
+    <rect width="240" height="300" rx="16" fill="#1e293b"/>
+    <rect width="240" height="300" rx="16" fill="#2563eb" opacity="0.15"/>
+    <!-- Lines -->
+    <rect x="30" y="50" width="180" height="12" rx="6" fill="#2563eb" opacity="0.8"/>
+    <rect x="30" y="80" width="140" height="8" rx="4" fill="#475569"/>
+    <rect x="30" y="100" width="160" height="8" rx="4" fill="#475569"/>
+    <rect x="30" y="120" width="120" height="8" rx="4" fill="#475569"/>
+    <rect x="30" y="155" width="180" height="12" rx="6" fill="#2563eb" opacity="0.8"/>
+    <rect x="30" y="185" width="150" height="8" rx="4" fill="#475569"/>
+    <rect x="30" y="205" width="130" height="8" rx="4" fill="#475569"/>
+    <rect x="30" y="225" width="160" height="8" rx="4" fill="#475569"/>
+    <!-- Checkmark badge -->
+    <circle cx="200" cy="260" r="28" fill="#22c55e"/>
+    <path d="M188 260 L197 269 L214 252" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   </g>
 
   <!-- Bottom branding -->
-  <text x="200" y="580" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700" fill="#475569" letter-spacing="2">FAIRBAIRN CONSULT</text>
-  <text x="600" y="580" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" fill="#334155" text-anchor="middle">Financial Advice · Compliance · Excellence</text>
+  <text x="80" y="590" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#475569" letter-spacing="3">FAIRBAIRN CONSULT</text>
+  <text x="1120" y="590" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#334155" text-anchor="end">FAIS Compliant · South Africa</text>
 
   <!-- Bottom accent bar -->
-  <rect y="625" width="1200" height="5" fill="#1d4ed8"/>
+  <rect y="624" width="1200" height="6" fill="#2563eb"/>
+
 </svg>
