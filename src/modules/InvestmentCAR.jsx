@@ -14,8 +14,32 @@
  * where they can click → Replace or Append pre-written paragraphs.
  */
 
-import { useState, useCallback } from 'react';
-import { getCARParagraphs } from '../data/investmentCARParagraphs.js';
+import { useState, useCallback, useEffect } from 'react';
+import { getCARParagraphs, CAR_PARAGRAPHS } from '../data/investmentCARParagraphs.js';
+
+// ─── Smart suggestion map: productType → paragraph ID in 'recommendation' ─────
+const PRODUCT_PARA_MAP = {
+  'Retirement Annuity':        'rec_ra',
+  'Living Annuity':            'rec_living_annuity',
+  'Preservation Fund':         'rec_preservation',
+  'Unit Trust':                'rec_unit_trust',
+  'Tax-Free Savings Account':  'rec_tfsa',
+  'Endowment':                 'rec_endowment',
+  'Guaranteed Life Annuity':   'rec_guaranteed_annuity',
+  'Fixed Deposit':             'rec_fixed_deposit',
+};
+
+// Wrapper-aware override: Life wrapper + Unit Trust product → suggest Endowment
+function getSmartSuggestion(productType, wrapper) {
+  if (!productType) return null;
+  let paraId = PRODUCT_PARA_MAP[productType];
+  // If advisor picked "Unit Trust" product type but "Life" wrapper, they likely mean an Endowment
+  if (productType === 'Unit Trust' && wrapper === 'Life (Long-term Insurance)') {
+    paraId = 'rec_endowment';
+  }
+  if (!paraId) return null;
+  return (CAR_PARAGRAPHS.recommendation || []).find(p => p.id === paraId) || null;
+}
 
 // ─── Tokens ──────────────────────────────────────────────────────────────────
 function applyTokens(text, carData) {
@@ -120,6 +144,44 @@ function TextFieldWithSuggestions({ label, hint, value, onChange, sectionKey, fi
       {value && (
         <p className="text-xs text-gray-400 mt-1 text-right">{value.split(/\s+/).filter(Boolean).length} words</p>
       )}
+    </div>
+  );
+}
+
+// ─── Smart suggestion banner ──────────────────────────────────────────────────
+function SmartSuggestionBanner({ productType, wrapper, onAccept, onDismiss }) {
+  const suggestion = getSmartSuggestion(productType, wrapper);
+  if (!suggestion) return null;
+
+  const wrapperNote = wrapper ? ` · ${wrapper}` : '';
+
+  return (
+    <div className="mb-4 rounded-xl border-2 border-green-400 bg-green-50 p-4">
+      <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-green-700 font-bold text-sm">✦ Smart Suggestion</span>
+          <span className="text-xs bg-green-100 text-green-700 rounded-full px-2 py-0.5 font-medium">
+            {suggestion.label}{wrapperNote}
+          </span>
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => onAccept(suggestion.text)}
+            className="text-xs bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Accept
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="text-xs text-gray-400 hover:text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+      <p className="text-xs text-green-800 leading-relaxed line-clamp-4 italic">{suggestion.text}</p>
     </div>
   );
 }
@@ -308,6 +370,8 @@ const defaultCarData = () => ({
   date: new Date().toLocaleDateString('en-ZA'),
   referenceNumber: '',
   contractNumber: '',
+  productType: '',
+  wrapper: '',
 
   sectionA: {
     clientNeedsObjectives: '',
@@ -364,8 +428,13 @@ const defaultCarData = () => ({
 export default function InvestmentCAR({ onComplete, advisorProfile, initialData }) {
   const [step, setStep] = useState('basic');
   const [carData, setCarData] = useState(() => initialData || defaultCarData());
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
 
   const update = useCallback((updates) => setCarData(prev => ({ ...prev, ...updates })), []);
+
+  // Reset dismissal whenever product type or wrapper changes so suggestion re-appears
+  useEffect(() => { setSuggestionDismissed(false); }, [carData.productType, carData.wrapper]);
+
   const updateA = useCallback((updates) => setCarData(prev => ({ ...prev, sectionA: { ...prev.sectionA, ...updates } })), []);
   const updateD = useCallback((updates) => setCarData(prev => ({ ...prev, sectionD: { ...prev.sectionD, ...updates } })), []);
   const updateE = useCallback((updates) => setCarData(prev => ({ ...prev, sectionE: { ...prev.sectionE, ...updates } })), []);
@@ -673,6 +742,48 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
       {/* ── Step: Sections C & D ── */}
       {step === 'sectionCD' && (
         <div className="space-y-6">
+
+          {/* Product Type + Wrapper selector */}
+          <div className="bg-white rounded-2xl border border-green-200 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-green-600 font-bold text-sm">✦ Smart Paragraph Assistant</span>
+              <span className="text-xs text-gray-400">Select product type and wrapper to get an auto-suggested paragraph</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Product Type</label>
+                <select
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  value={carData.productType}
+                  onChange={e => update({ productType: e.target.value })}
+                >
+                  <option value="">Select product type…</option>
+                  <option>Retirement Annuity</option>
+                  <option>Living Annuity</option>
+                  <option>Preservation Fund</option>
+                  <option>Unit Trust</option>
+                  <option>Tax-Free Savings Account</option>
+                  <option>Endowment</option>
+                  <option>Guaranteed Life Annuity</option>
+                  <option>Fixed Deposit</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">Wrapper</label>
+                <select
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  value={carData.wrapper}
+                  onChange={e => update({ wrapper: e.target.value })}
+                >
+                  <option value="">Select wrapper…</option>
+                  <option>Life (Long-term Insurance)</option>
+                  <option>Unit Trust / CIS (CISCA)</option>
+                  <option>Banking / Deposit</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           {/* Section C */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6">
             <SectionHeading
@@ -728,6 +839,14 @@ export default function InvestmentCAR({ onComplete, advisorProfile, initialData 
                 onChange={e => updateD({ productsRecommended: e.target.value })}
               />
             </div>
+            {!suggestionDismissed && (
+              <SmartSuggestionBanner
+                productType={carData.productType}
+                wrapper={carData.wrapper}
+                onAccept={text => { updateD({ motivation: applyTokens(text, carData) }); setSuggestionDismissed(true); }}
+                onDismiss={() => setSuggestionDismissed(true)}
+              />
+            )}
             <TextFieldWithSuggestions
               label="Motivation for Recommendation"
               hint="State why the product recommended will suit the client. Reference relevant information from Sections A and B."
