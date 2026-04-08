@@ -28,6 +28,8 @@ import ROADocument     from './modules/ROADocument.jsx';
 import ParagraphManager  from './admin/ParagraphManager.jsx';
 import ProfileSettings   from './admin/ProfileSettings.jsx';
 import SavedROAsManager  from './admin/SavedROAsManager.jsx';
+import AccessCodeManager from './admin/AccessCodeManager.jsx';
+import AuthGate, { getSession, clearSession } from './modules/AuthGate.jsx';
 import {
   saveROA, saveDraft, loadDraft, clearDraft,
   loadProfile, saveProfile, generateROAId,
@@ -83,6 +85,16 @@ function StepBar({ currentStep, completedSteps }) {
 // ══════════════════════════════════════════════════════════════════════════
 
 export default function App() {
+  const [session, setSession] = useState(() => getSession());
+
+  if (!session) {
+    return <AuthGate onAuth={(s) => setSession(s)} />;
+  }
+
+  return <AppShell session={session} onSignOut={() => { clearSession(); setSession(null); }} />;
+}
+
+function AppShell({ session, onSignOut }) {
   const [step,           setStep]           = useState('client');
   const [completedSteps, setCompleted]      = useState([]);
   const [roaData,        setRoaData]        = useState({
@@ -101,9 +113,10 @@ export default function App() {
   useEffect(() => { roaDataRef.current = roaData; }, [roaData]);
 
   // Admin overlays
-  const [showSettings,   setShowSettings]   = useState(false);
-  const [showParaManager,setShowParaManager]= useState(false);
-  const [showSaved,      setShowSaved]      = useState(false);
+  const [showSettings,      setShowSettings]      = useState(false);
+  const [showParaManager,   setShowParaManager]   = useState(false);
+  const [showSaved,         setShowSaved]         = useState(false);
+  const [showAccessCodes,   setShowAccessCodes]   = useState(false);
 
   // Advisor profile
   const [advisorProfile, setAdvisorProfile] = useState(loadProfile());
@@ -232,6 +245,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 hidden sm:block">{session.advisorName}</span>
             <button onClick={() => setShowSaved(true)} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
               Saved
             </button>
@@ -241,8 +255,16 @@ export default function App() {
             <button onClick={() => setShowParaManager(true)} className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors hidden sm:block">
               Paragraphs
             </button>
+            {session.isAdmin && (
+              <button onClick={() => setShowAccessCodes(true)} className="text-xs text-amber-600 border border-amber-200 rounded-lg px-3 py-1.5 hover:bg-amber-50 transition-colors hidden sm:block">
+                Access Codes
+              </button>
+            )}
             <button onClick={() => setShowSettings(true)} className="text-xs bg-gray-800 text-white rounded-lg px-3 py-1.5 hover:bg-gray-700 transition-colors">
               Settings
+            </button>
+            <button onClick={onSignOut} className="text-xs text-red-500 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors">
+              Sign out
             </button>
           </div>
         </div>
@@ -377,6 +399,7 @@ export default function App() {
       {showSettings    && <ProfileSettings  onClose={() => setShowSettings(false)}    onChange={p => { setAdvisorProfile(p); saveProfile(p); }} />}
       {showParaManager && <ParagraphManager onClose={() => setShowParaManager(false)} />}
       {showSaved       && <SavedROAsManager  onLoad={handleLoadROA}                    onClose={() => setShowSaved(false)} />}
+      {showAccessCodes && <AccessCodeManager onClose={() => setShowAccessCodes(false)} />}
 
     </div>
   );
